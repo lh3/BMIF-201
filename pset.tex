@@ -1,0 +1,190 @@
+\documentclass{article}[10pt]
+
+\usepackage{amsthm}
+\theoremstyle{definition}\newtheorem{question}{Question}
+\renewcommand*{\proofname}{Solution}
+
+\usepackage[margin=1in,footskip=0.25in]{geometry}
+
+\usepackage{hyperref}
+
+\renewcommand{\ttdefault}{cmtt}
+
+\begin{document}
+
+\begin{question}
+Given a string $T$, a \emph{subsequence} of $T$ is composed of symbols in $T$
+without changing their original order in $T$. For example, both ${\tt CGA}$ and
+${\tt CCT}$ are subsequences of ${\tt CGCTA}$. Given two strings $T_1$ and
+$T_2$, a \emph{common subsequence} is a string that is the subsequence of both
+$T_1$ and $T_2$. For example, ${\tt CGA}$ is a common subsequence of ${\tt
+CGCTA}$ and ${\tt CTGAT}$. The 2-string longest common subsequence problem
+is to find the longest common subsequence (LCS) among all subsequences between
+two strings. Questions:
+\begin{enumerate}
+\item Find the length of LCS between two strings with dynamic programming (DP).
+Write down the DP equation. \emph{Hint: very similar to computing edit distance.}
+\item Implement the algorithm and compute the length of LCS between 
+``${\tt GCATAAATTATAACTCCAGCTATAGC}$'' and ``${\tt CAAACCCCAGGGACGGGTTAGCA}$''.
+Try to use less memory.
+\end{enumerate}
+\end{question}
+
+\begin{proof}
+Given two strings $A=a_1a_2\ldots a_m$ and $B=b_1b_2\ldots b_n$, let $f(i,j)$
+be the length of LCS between prefixes $a_1a_2\ldots a_i$ and $b_1b_2\ldots
+b_j$. Then $f(m,n)$ gives the length of LCS between $A$ and $B$.
+
+The computation of $f()$ starts with $f(i,0)=0$ and $f(0,j)=0$ for $0\le i\le m$
+and $0\le j\le n$. The DP equation is
+$$
+f(i,j)=\max\{f(i-1,j-1)+\delta(a_i,b_j),f(i-1,j),f(i,j-1)\}
+$$
+where $\delta(a,b)$ equals 1 if $a=b$, or 0 otherwise.
+
+A python implementation can be found at
+\href{https://ideone.com/Om4JhD}{https://ideone.com/Om4JhD}. For the two given
+strings, the length of LCS is 15.
+
+An equivalent equation is
+$$
+f(i,j)=\left\{\begin{array}{ll}
+0            & \mbox{if $i=0$ or $j=0$}\\
+f(i-1,j-1)+1 & \mbox{if $i,j>0$ and $a_i=b_j$}\\ 
+\max\{f(i-1,j),f(i,j-1)\} & \mbox{otherwise}
+\end{array}\right.
+$$
+It is equivalent because $f(i-1,j-1)\le\max\{f(i-1,j),f(i,j-1)\}$.
+\end{proof}
+
+
+
+\begin{question}
+There are $n$ distinct $k$-mers in two DNA sequences and $m$ of which are
+shared between the two sequences. Questions:
+\begin{enumerate}
+\item Estimate the approximate similarity between the two sequences assuming no
+$k$-mers ocurring multiple times in one sequence. Only use $n$, $m$ and $k$ as
+parameters.
+\item Implement the algorithm and find the sequence similarity between the following two strings for $k=7$:
+\begin{quote}
+\footnotesize\tt
+CGATATAAGCAATATTATTATATTACGCCCAATAAACGATAGCTAATATGCCGCGGAGCGATCGAACCGCCCCGATAAGACCCC\\
+CGATATAAGCAATATTAaTATATTAGCCCAATAAACGATAGCTAATATGggGCGGAGCGATCGAACCGCCCCGAaaTAAGACCCC
+\end{quote}
+\item Discuss potential problems with this approximation.
+\end{enumerate}
+\end{question}
+
+\begin{proof}
+If there are no $k$-mers occurring multiple times in one sequence, there are
+$n+m$ $k$-mers in total in the two sequences and $2m$ of them are shared.
+Let the similarity be $p$. The probability of seeing no differences on a
+$k$-long sequence is $p^k$. The likelihood function is
+$$
+\mathcal{L}(p)=\left(p^k\right)^{2m}\left(1-p^k\right)^{n+m-2m}=p^{2km}\left(1-p^k\right)^{n-m}
+$$
+Therefore,
+$$
+\frac{\partial\log\mathcal{L}(p)}{\partial p}=\frac{2km}{p}-\frac{n-m}{1-p^k}\cdot kp^{k-1}=\frac{k\cdot\left[2m-(n+m)p^k\right]}{p\left(1-p^k\right)}
+$$
+The maximum likelihood estimate of $p$ is obtained at
+$\partial\log\mathcal{L}/\partial p=0$. Solving the equation gives
+$$
+\hat{p}=\left(\frac{2m}{n+m}\right)^{1/k}
+$$
+
+An alternative derivation can use a Poisson approximation. In this case, the
+probability of seeing no differences on a $k$-mer is $e^{-pk}$. The maximum
+likelihood estimate is $-\frac{1}{k}\log\frac{2m}{m+n}$. We can find this
+approximation in the Mash paper (Ondov et al, 2016). The first derivation is
+preferred as it uses one less approximation.
+
+A sorting-based python implementation is available at
+\href{https://ideone.com/F02WCa}{https://ideone.com/F02WCa}. The 7-mer
+similarity is 93.8\%. This algorithm can also implemented with a hash table.
+The major problem with this approximation is that it assumes all $k$-mers are
+independent. Due to actual $k$-mer dependencies, the estimate varies with $k$.
+\end{proof}
+
+
+
+\begin{question}
+Implement a simplified CNV caller using HMM. Suppose after read mapping, we
+symbolize a series of loci into a sequence like ``${\tt
+11111110102222211110111}$'' where symbol `${\tt 1}$' for normal coverage,
+`${\tt 0}$' for lower than expected coverage and `${\tt 2}$' for higher
+coverage. We design a 2-state HMM to call duplications on the symbol sequence.
+The HMM has two hidden states: `${\tt N}$' for normal ploidy and `${\tt D}$' for
+duplications. We parameterize the HMM as follows, where $P$ gives the transition
+probabilities between hidden states and $E$ gives the emission probabilities:
+$$
+{\bf P}=\left(\begin{array}{ll}
+p({\tt N}|{\tt N}) & p({\tt D}|{\tt N}) \\
+p({\tt N}|{\tt D}) & p({\tt D}|{\tt D})
+\end{array}\right)
+=\left(\begin{array}{ll}
+0.9 & 0.1 \\
+0.2 & 0.8
+\end{array}\right)
+$$
+\end{question}
+$$
+{\bf E}=\left(\begin{array}{lll}
+e({\tt 0}|{\tt N}) & e({\tt 1}|{\tt N}) & e({\tt 2}|{\tt N})\\
+e({\tt 0}|{\tt D}) & e({\tt 1}|{\tt D}) & e({\tt 2}|{\tt D})
+\end{array}\right)
+=\left(\begin{array}{lll}
+0.15 & 0.70 & 0.15\\
+0.01 & 0.19 & 0.80
+\end{array}\right)
+$$
+Questions:
+\begin{enumerate}
+\item Derive the probability of the hidden state if we run the HMM for infinite
+time (i.e. the stationary distribution).
+\item Write a program to infer the hidden states of symbol sequence with posterior decoding. 
+\begin{quote}
+\footnotesize\tt 1211100122111011112222112022010200111001211202220112112111220222112221211121002122122222222212222112\\
+\end{quote}
+
+Here is a sample output for a different input
+\begin{quote}
+\footnotesize\tt 1012111121101211001111121120012222222222212221220111211111111002212222221112212122111111120111222122
+\footnotesize\tt NNNNNNNNNNNNNNDDNNNNNNNNNNNNNNDDDDDDDDDDDDDDDDDDNNNNNNNNNNNNNNNDDDDDDDDNNNDDDDDNDDNNNNNNNNNNNNDDDDDD
+\end{quote}
+\end{enumerate}
+
+\begin{proof}
+The stationary distribution ${\bf q}=(q({\tt N}),q({\tt D}))$ follows
+$$
+{\bf q}\cdot{\bf P}={\bf q}
+$$
+on the condition that $q({\tt N})+q({\tt D})=1$. Solving this equation gives
+$$
+q({\tt N})=\frac{p({\tt N}|{\tt D})}{p({\tt N}|{\tt D}) + p({\tt D}|{\tt N})}
+$$
+In this example, $q({\tt N})=2/3$.
+
+For the given string, the inferred hidden states are:
+\begin{quote}
+\footnotesize\tt 1211100122111011112222112022010200111001211202220112112111220222112221211121002122122222222212222112\\
+\footnotesize\tt NNNNNNNNDDNNNNNNNNDDDDNNNNDNNNNNNNNNNNNNNNNNNDDDNNNNNNNNNNDDNDDDDDDDDDDNNNNNNNNNDDDDDDDDDDDDDDDDDNNN
+\end{quote}
+A python implementation is available at \href{https://ideone.com/nnh6Q2}{https://ideone.com/nnh6Q2}.
+
+\begin{flushleft}
+PS: This is simulated data. The truth actually is
+\end{flushleft}
+\begin{quote}
+\footnotesize\tt 1211100122111011112222112022010200111001211202220112112111220222112221211121002122122222222212222112\\
+\footnotesize\tt NNNNNNNNNDDNNNNNNNNDDDNNNNNNNNNNNNNNNNNNNNNNNDDDNNNNNNNNNDDDNDDDDDDDDDDNNNNNNNDDDDDDDDDDDDDDDDDDDDDD
+\end{quote}
+
+The simulator and the posterior decoder can be found at
+\href{https://ideone.com/a9a2h0}{https://ideone.com/a9a2h0}. Students do not
+need to provide a simulator.
+
+\end{proof}
+
+\end{document}
