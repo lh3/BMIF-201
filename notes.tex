@@ -1,0 +1,217 @@
+\documentclass[10pt]{article}
+
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage[margin=1in,footskip=0.25in]{geometry}
+
+\usepackage{hyperref}
+
+\renewcommand{\ttdefault}{cmtt}
+
+\begin{document}
+
+\section{Resolving ambiguously mapped reads for RNA-seq}
+
+\subsection{Likelihood and maximum likelihood estimation (MLE)}
+
+A likelihood function or simply \emph{likelihood} is the probability of data
+give parameters. It is a function of parameters.
+$$
+\mathcal{L}(\theta)=\Pr\{d|\theta\}
+$$
+MLE finds $\hat{\theta}$ that maximizes $\mathcal{L}(\theta)$.  The estimate
+$\hat{\theta}$ satisfies:
+$$
+\left.\frac{\partial \mathcal{L}(\theta)}{\partial\theta}\right|_{\theta=\hat{\theta}}=0
+$$
+Or sometimes for the ease of derivaton:
+$$
+\left.\frac{\partial \log\mathcal{L}(\theta)}{\partial\theta}\right|_{\theta=\hat{\theta}}=0
+$$
+
+\subsection{The estimation-maximization algorithm (EM)}
+
+For a complex problem, it is often difficult to write down the close form of
+$\mathcal{L}(\theta)$, so we can't directly do derivation. EM is an iterative
+algorithm to find MLE when the likihood function can be expressed with
+latent/hidden variables.
+$$
+\mathcal{L}(\theta)=\Pr\{d|\theta\}=\sum_z\Pr\{d,Z=z|\theta\}
+$$
+where $\sum_{\bf z}$ sums over all latent states. For contiguous latent
+variables, replace sum with integral. The central element in EM is the
+$Q$-function, which is defined by:
+$$
+Q(\theta|\theta^t)=\mathbb{E}_{{\bf z}|{\bf d},\theta^t}\log\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}=\sum_{{\bf z}}\Pr\{{\bf Z}={\bf z}|{\bf d},\theta^t\}\cdot\log\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}
+$$
+where $\theta^t$ is the estimate at $t$-th iteration. For a standard EM, the
+estimate at the $(t+1)$ iteration $\theta^{t+1}$ maximizes $Q(\theta|\theta^t)$:
+$$
+\left.\frac{\partial Q(\theta|\theta^t)}{\partial\theta}\right|_{\theta=\theta^{t+1}}=0
+$$
+It can be proved that $\theta^{t+1}$ increases $\mathcal{L}(\theta)$.
+
+For a problem solvable by EM, $Q(\theta|\theta^t)$ can usually be expressed in
+the close form or take a simpler form than $\mathcal{L}(\theta)$. EM guarantees
+convergence, but doesn't guarantee to converge to the global maxmium.
+
+\subsection{RNA-seq quantification}
+Suppose we have $N$ transcripts and $R$ reads. $p_k$ is the probability of
+transcript $k$, $k=1,\ldots,N$. $\theta=\{p_k\}_k$ is the set of parameters.
+$Z_i\in\{1,\ldots,N\}$ is the true origin of read $i$. It is a latent variable.
+Let $\alpha_{iz}\triangleq\Pr\{d_i|Z_i=z\}$ be the probability of read $i$
+being generated from transcript $z$. For a simple model, let $l_z$ be the
+\emph{effective} length of transcript $z$. We can compute $\alpha_{iz}=1/l_z$
+if the hit to $z$ is one of the equally best hits of read $i$; otherwise
+$\alpha_{iz}=0$.
+\[
+\Pr\{d_i,Z_i=z|\theta\}=\Pr\{d_i|Z_i=z\}\Pr\{Z_i=z|\theta\}=\alpha_{iz}p_z
+\]
+\[
+\beta_{iz}(\theta)\triangleq\Pr\{Z_i=z|d_i,\theta\}=\frac{\alpha_{iz}p_z}{\sum_{y}\alpha_{iy}p_y}
+\]
+$\beta_{iz}$ is the posterior probability that read $i$ comes from transcript
+$z$. The likelihood function is
+$$
+\mathcal{L}(\theta)=\sum_{\bf z}\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}=\sum_{z_1=1}^N\cdots\sum_{z_R=1}^N\prod_{i=1}^R\Pr\{d_i,Z_i=z_i|\theta\}
+=\sum_{z_1=1}^N\cdots\sum_{z_R=1}^N\prod_{i=1}^R\alpha_{iz_i}p_{z_i}
+$$
+There are $R^N$ terms. It is difficult to directly derive the MLE of $p_z$.
+We now solve this problem with EM. As a preparation
+\[
+\log\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}=\log\Pr\{{\bf d}|{\bf Z}={\bf z}\}\Pr\{{\bf Z}={\bf z}|\theta\}=C+\sum_i\log p_{z_i}
+\]
+where $C$ is not a function of parameters $\theta$.
+
+We now compute the $Q$ function:
+\begin{eqnarray*}
+Q(\theta|\theta^t)&=&\sum_{{\bf z}}\Pr\{{\bf Z}={\bf z}|{\bf d},\theta^t\}\cdot\log\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}\\
+&=&C+\sum_{{\bf z}}\prod_j\Pr\{Z_j=z_j|d_j,\theta^t\}\sum_i\log p_{z_i}\\
+&=&C+\sum_{i=1}^R\sum_{z_i=1}^N\Pr\{Z_i=z_i|d_i,\theta^t\}\log p_{z_i}\\
+&=&C+\sum_{i=1}^R\sum_{z=1}^N\beta_{iz}(\theta^t)\log p_z
+\end{eqnarray*}
+Under constraint $\sum_zp_z=1$, requiring
+$\partial_{p_y}(Q-\lambda\sum_zp_z)=0$ leads to
+\[
+p_y=\frac{1}{\lambda}\sum_i\beta_{iy}(\theta^t)
+\]
+and thus
+\[
+\lambda=\sum_i\sum_z\beta_{iz}(\theta^t)=R
+\]
+Then
+\[
+p_y^{(t+1)}=\frac{1}{R}\sum_i\beta_{iy}(\theta^t)=\frac{1}{R}\sum_i\frac{\alpha_{iz}p^{(t)}_z}{\sum_{y}\alpha_{iy}p^{(t)}_y}
+\]
+\section{Markov Chain}
+
+\subsection{Markov chain: the basic}
+Let $\Sigma$ be an alphabet and $a\in\Sigma$ be a symbol. Markov property:
+$$
+\Pr\{X_i=a_i|X_{1,i-1}=a_1\cdots a_{i-1}\}=\Pr\{X_i=a_i|X_{i-1}=a_{i-1}\}
+$$
+A Markov chain is \emph{homogeneous} if
+$$
+\Pr\{X_i=a_i|X_{i-1}=a_{i-1}\}=\Pr\{X_j=a_j|X_{j-1}=a_{j-1}\}
+$$
+for any $i$ and $j$. Let $p_{ab}=p(b|a)\triangleq\Pr\{X_i=b|X_{i-1}=a\}$ be the
+transition probability from $a$ to $b$. Then
+$$
+P(x)=\Pr\{X_{1,L}=a_1\cdots a_L\}=q(a_1)\prod_{i=2}^Lp(a_i|a_{i-1})
+$$
+where $q(a)$ is the initial probability. It is \emph{stationary} if
+$$
+q(a)=\sum_{b\in\Sigma} q(b)p(a|b)
+$$
+
+Suppose there are $n$ states. Define square transition matrix
+$$
+\mathbf{P}=\left(\begin{array}{cccc}
+p(1|1) & p(2|1) & \cdots & p(n|1) \\
+p(1|2) & p(2|2) & \cdots & p(n|2) \\
+\vdots & \vdots & \ddots & \vdots \\
+p(1|n) & p(2|n) & \cdots & p(n|n)
+\end{array}\right)
+$$
+and column vector
+$$
+\mathbf{q}=\left(\begin{array}{c}
+q(1) \\
+q(2) \\
+\vdots\\
+q(n)
+\end{array}\right)
+$$
+Then in the matrix form:
+$$
+\mathbf{q}^\intercal\cdot\mathbf{P}=\mathbf{q}^\intercal
+$$
+
+\subsection{$k$-order Markov chain}
+$$
+\Pr\{X_i=a_i|X_{1,i-1}=a_1\cdots a_{i-1}\}=\Pr\{X_i=a_i|X_{i-k,i-1}=a_{i-k}\cdots a_{i-1}\}
+$$
+
+\section{Hidden Markov Model (HMM)}
+\subsection{HMM: the basic}
+Let $\mathcal{S}$ be the state space. A homogeneous HMM is defined by:
+$$
+p(t|s)\triangleq\Pr\{Z_i=t|Z_{i-1}=s\}
+$$
+$$
+e(a|s)\triangleq\Pr\{X_i=a|Z_i=s\}
+$$
+
+\subsubsection{The Viterbi algorithm}
+$$
+\gamma(i+1,t)=e(a_{i+1}|t)\max_s\gamma(i,s)p(t|s)
+$$
+
+\subsubsection{The forward algorithm}
+\begin{eqnarray*}
+\alpha(i,t)&\triangleq&\Pr\{Z_i=t,X_{1,i}=a_1\cdots a_i\}\\
+&=&\sum_{s\in\mathcal{S}}\Pr\{Z_i=t,Z_{i-1}=s,X_{1,i}=a_1\cdots a_i\}\\
+&=&\sum_s\Pr\{Z_i=t,X_i=a_i,Z_{i-1}=s,X_{1,{i-1}}=a_1\cdots a_{i-1}\}\\
+&=&\sum_s\Pr\{Z_i=t,X_i=a_i|Z_{i-1}=s\}\Pr\{Z_{i-1}=s,X_{1,{i-1}}=a_1\cdots a_{i-1}\}\\
+&=&\sum_s\Pr\{Z_i=t|Z_{i-1}=s\}\Pr\{X_i=a_i|Z_i=t\}\alpha(i-1,s)\\
+&=&e(a_i|t)\sum_s\alpha(i-1,s)p(t|s)
+\end{eqnarray*}
+For convenience and consistency, we often assume at $i=0$, the HMM starts at
+state $\epsilon$ at probability 1, i.e. $\Pr\{Z_0=\epsilon\}=1$. Then at $i=1$:
+$$
+\alpha(1,t)=\Pr\{Z_1=t,X_1=a_1\}=\Pr\{Z_1=t,X_1=a_1|Z_0=\epsilon\}=e(a_1|t)p(t|\epsilon)
+$$
+where $p(t|\epsilon)$ is arbitrary. In practice, we often choose
+$p(t|\epsilon)=q(t)$.
+
+The probability of a sequence
+$$
+P(x)=\Pr\{X_{1,L}=a_1\cdots a_L\}=\sum_s\Pr\{X_{1,L}=a_1\cdots a_L,Z_i=s\}=\sum_s\alpha(i,s)
+$$
+
+\subsubsection{The backward algorithm}
+\begin{eqnarray*}
+\beta(i,s)&\triangleq&\Pr\{X_{i+1,L}=a_{i+1}\cdots a_L|Z_i=s\}\\
+&=&\sum_{t\in\mathcal{S}}\Pr\{X_{i+1,L}=a_{i+1}\cdots a_L,Z_{i+1}=t|Z_i=s\}\\
+&=&\sum_t\Pr\{X_{i+1,L}=a_{i+1}\cdots a_L|Z_{i+1}=t\}\Pr\{Z_{i+1}=t|Z_i=s\}\\
+&=&\sum_t\Pr\{X_{i+2,L}=a_{i+2}\cdots a_L|Z_{i+1}=t\}\Pr\{X_{i+1}=a_{i+1}|Z_{i+1}=t\}p(t|s)\\
+&=&\sum_t\beta(i+1,t)e(a_{i+1}|t)p(t|s)
+\end{eqnarray*}
+Similarly, we assume all sequences end up with a special symbol
+``{\tt\char36}'', i.e. $X_{L+1,L+1}=a_{L+1}={\tt\char36}$. Then
+$$
+\beta(L,s)=\Pr\{X_{L+1,L+1}={\tt\char36}|Z_L=s\}=1
+$$
+
+\subsubsection{Posterior decoding}
+\begin{eqnarray*}
+&& \Pr\{X_{1,L}=a_1\cdots a_L,Z_i=s\}\\
+&=&\Pr\{X_{i+1,L}=a_{i+1}\cdots a_L,X_{1,i}=a_1\cdots a_i,Z_i=s\}\\
+&=&\Pr\{X_{i+1,L}=a_{i+1}\cdots a_L|Z_i=s\}\Pr\{Z_i=s,X_{1,i}=a_1\cdots a_i\}\\
+&=&\alpha(i,s)\beta(i,s)
+\end{eqnarray*}
+$$
+\Pr\{Z_i=s|x\}=\frac{\alpha(i,s)\beta(i,s)}{P(x)}
+$$
+
+\end{document}
