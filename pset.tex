@@ -63,9 +63,12 @@ It is equivalent because $f(i-1,j-1)\le\max\{f(i-1,j),f(i,j-1)\}$.
 Suppose there are $n$ distinct $k$-mers in two DNA sequences and $m$ of which are
 shared between the two sequences. Questions:
 \begin{enumerate}
-\item Estimate the approximate similarity between the two sequences assuming no
-$k$-mers ocurring multiple times in one sequence. Only use $n$, $m$ and $k$ as
-parameters.
+\item Prove that the similarity between the two sequences can be estimated by
+the following equation, assuming no $k$-mers occurring multiple times on one
+sequence.
+$$
+\hat{p}=\left(\frac{2m}{n+m}\right)^{1/k}
+$$
 \item Implement the algorithm and find the sequence similarity between the following two strings for $k=7$:
 \begin{quote}
 \footnotesize\tt
