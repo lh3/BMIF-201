@@ -3,6 +3,7 @@
 \usepackage{graphicx}
 \usepackage{amssymb}
 \usepackage[margin=1in,footskip=0.25in]{geometry}
+\usepackage{comment}
 
 \usepackage{hyperref}
 
@@ -10,7 +11,45 @@
 
 \begin{document}
 
-\section{Resolving ambiguously mapped reads for RNA-seq}
+\section{Probabilistic}
+
+\subsection{Conditional probability and Bayesian formula}
+
+Joint probability, written as $P(A\cap B)$ or $P(A,B)$, means two events happening at the
+same time.  Conditional probability is defined as:
+$$
+P(A|B)\triangleq\frac{P(A\cap B)}{P(B)}
+$$
+Then
+$$
+P(A\cap B)=P(A|B)P(B)=P(B|A)P(A)
+$$
+thus Bayesian formula:
+$$
+P(A|B)=\frac{P(B|A)P(A)}{P(B)}
+$$
+
+\begin{comment}
+An example. Let
+$$
+X=\left\{\begin{array}{ll}
+1 & \mbox{if sunny} \\
+0 & \mbox{otherwise}
+\end{array}\right.
+$$
+$$
+Y=\left\{\begin{array}{ll}
+1 & \mbox{if warm} \\
+0 & \mbox{if cold}
+\end{array}\right.
+$$
+$$
+\Pr\{\mbox{sunny}\}=\Pr\{\mbox{sunny and warm}\}+\Pr\{\mbox{sunny and cold}\}
+$$
+$$
+\Pr\{X=x\}=\sum_y\Pr\{X=x,Y=y\}
+$$
+\end{comment}
 
 \subsection{Likelihood and maximum likelihood estimation (MLE)}
 
@@ -28,6 +67,10 @@ Or sometimes for the ease of derivaton:
 $$
 \left.\frac{\partial \log\mathcal{L}(\theta)}{\partial\theta}\right|_{\theta=\hat{\theta}}=0
 $$
+
+\begin{comment}
+An example. Suppose in the last August, 20 out of 31 days were sunny.
+\end{comment}
 
 \subsection{The estimation-maximization algorithm (EM)}
 
@@ -55,7 +98,8 @@ For a problem solvable by EM, $Q(\theta|\theta^t)$ can usually be expressed in
 the close form or take a simpler form than $\mathcal{L}(\theta)$. EM guarantees
 convergence, but doesn't guarantee to converge to the global maxmium.
 
-\subsection{RNA-seq quantification}
+\section{Resolving ambiguously mapped reads for RNA-seq}
+
 Suppose we have $N$ transcripts and $R$ reads. $p_k$ is the probability of
 transcript $k$, $k=1,\ldots,N$. $\theta=\{p_k\}_k$ is the set of parameters.
 $Z_i\in\{1,\ldots,N\}$ is the true origin of read $i$. It is a latent variable.
@@ -101,7 +145,7 @@ and thus
 \]
 Then
 \[
-p_y^{(t+1)}=\frac{1}{R}\sum_i\beta_{iy}(\theta^t)=\frac{1}{R}\sum_i\frac{\alpha_{iz}p^{(t)}_z}{\sum_{y}\alpha_{iy}p^{(t)}_y}
+p_y^{(t+1)}=\frac{1}{R}\sum_i\beta_{iy}(\theta^t)=\frac{1}{R}\sum_i\frac{\alpha_{iz}p^{(t)}_z}{\sum_{y}\alpha_{iy}p^{(t)}_y}=\frac{1}{R}\sum_i\frac{p_z^{(t)}/l_z}{\sum_yp_y^{(t)}/l_y}
 \]
 \section{Markov Chain}
 
