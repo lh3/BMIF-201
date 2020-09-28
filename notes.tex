@@ -18,11 +18,11 @@
 Joint probability, written as $P(A\cap B)$ or $P(A,B)$, means two events happening at the
 same time.  Conditional probability is defined as:
 $$
-P(A|B)\triangleq\frac{P(A\cap B)}{P(B)}
+P(A|B)\triangleq\frac{P(A,B)}{P(B)}
 $$
 Then
 $$
-P(A\cap B)=P(A|B)P(B)=P(B|A)P(A)
+P(A,B)=P(A|B)P(B)=P(B|A)P(A)
 $$
 thus Bayesian formula:
 $$
@@ -98,6 +98,8 @@ For a problem solvable by EM, $Q(\theta|\theta^t)$ can usually be expressed in
 the close form or take a simpler form than $\mathcal{L}(\theta)$. EM guarantees
 convergence, but doesn't guarantee to converge to the global maxmium.
 
+\newpage
+
 \section{Resolving ambiguously mapped reads for RNA-seq}
 
 Suppose we have $N$ transcripts and $R$ reads. $p_k$ is the probability of
@@ -147,6 +149,9 @@ Then
 \[
 p_y^{(t+1)}=\frac{1}{R}\sum_i\beta_{iy}(\theta^t)=\frac{1}{R}\sum_i\frac{\alpha_{iz}p^{(t)}_z}{\sum_{y}\alpha_{iy}p^{(t)}_y}=\frac{1}{R}\sum_i\frac{p_z^{(t)}/l_z}{\sum_yp_y^{(t)}/l_y}
 \]
+
+\newpage
+
 \section{Markov Chain}
 
 \subsection{Markov chain: the basic}
@@ -195,6 +200,8 @@ $$
 $$
 \Pr\{X_i=a_i|X_{1,i-1}=a_1\cdots a_{i-1}\}=\Pr\{X_i=a_i|X_{i-k,i-1}=a_{i-k}\cdots a_{i-1}\}
 $$
+
+\newpage
 
 \section{Hidden Markov Model (HMM)}
 \subsection{HMM: the basic}
@@ -256,6 +263,43 @@ $$
 \end{eqnarray*}
 $$
 \Pr\{Z_i=s|x\}=\frac{\alpha(i,s)\beta(i,s)}{P(x)}
+$$
+
+\newpage
+
+\section{Variant calling models}
+
+\subsection{Genotype likelihood}
+Let ${\bf d}$ be a list of read bases.
+\begin{eqnarray*}
+\Pr\{{\bf d}|G=\langle a,b\rangle\}
+&=&\prod_i\Pr\{d_i|G=\langle a,b\rangle\}\\
+&=&\prod_i\Big[\Pr\{d_i,\mbox{choose $a$ allele}|G=\langle a,b\rangle\}+\Pr\{d_i,\mbox{choose $b$ allele}|G=\langle a,b\rangle\}\Big]\\
+&=&\prod_i\Big[\Pr\{d_i|\mbox{choose $a$ allele},G=\langle a,b\rangle\}\Pr\{\mbox{choose $a$ allele}|G=\langle a,b\rangle\}\\
+&&+\Pr\{d_i,\mbox{choose $b$ allele}|G=\langle a,b\rangle\}\Big]\\
+&=&\prod_i\frac{P(d_i|a)+P(d_i|b)}{2}
+\end{eqnarray*}
+
+An example. Suppose at a position there are 3 ``A'' bases and 7 ``C'' bases,
+all at base quality 20, i.e. $\epsilon=0.01$.
+\begin{eqnarray*}
+\mathcal{L}(\langle{\tt A},{\tt A}\rangle)&=&\epsilon^{n_C}(1-\epsilon)^{n_A}\approx10^{-6}=Q60\\
+\mathcal{L}(\langle{\tt C},{\tt C}\rangle)&=&\epsilon^{n_A}(1-\epsilon)^{n_C}\approx10^{-14}=Q140\\
+\mathcal{L}(\langle{\tt A},{\tt C}\rangle)&=&\frac{1}{2^{n_A+n_C}}=2^{-10}\approx Q30
+\end{eqnarray*}
+Note that $-10\log_{10}0.5=3.010$, so $1/2$ is equivalent to Q3 approximately.
+
+\subsection{Bayesian variant callers}
+If ${\tt R}$ is the reference base, ${\tt A}$ is the alternate and $\theta$ is
+the scaled mutation rate, under the Wright-Fisher model:
+\begin{eqnarray*}
+P(\langle{\tt R},{\tt A}\rangle)&=&\theta\\
+P(\langle{\tt A},{\tt A}\rangle)&=&\frac{\theta}{2}\\
+P(\langle{\tt R},{\tt R}\rangle)&=&1-\frac{3\theta}{2}\\
+\end{eqnarray*}
+For human, $\theta\approx10^{-3}$. The posterior:
+$$
+P(g|d)=\frac{P(d|g)P(g)}{\sum_hP(d|h)P(h)}=\frac{\mathcal{L}(g)P(g)}{\sum_h\mathcal{L}(h)P(h)}
 $$
 
 \end{document}
