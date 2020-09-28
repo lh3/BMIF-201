@@ -79,24 +79,50 @@ $\mathcal{L}(\theta)$, so we can't directly do derivation. EM is an iterative
 algorithm to find MLE when the likihood function can be expressed with
 latent/hidden variables.
 $$
-\mathcal{L}(\theta)=\Pr\{d|\theta\}=\sum_z\Pr\{d,Z=z|\theta\}
+\mathcal{L}(\theta)=\Pr\{{\bf d}|\theta\}=\sum_z\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}
 $$
 where $\sum_{\bf z}$ sums over all latent states. For contiguous latent
-variables, replace sum with integral. The central element in EM is the
-$Q$-function, which is defined by:
+variables, replace sum with integral.
+
+The central equation in EM is the $Q$ funciton defined by
 $$
-Q(\theta|\theta^t)=\mathbb{E}_{{\bf z}|{\bf d},\theta^t}\log\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}=\sum_{{\bf z}}\Pr\{{\bf Z}={\bf z}|{\bf d},\theta^t\}\cdot\log\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}
+Q(\theta|\theta^t)\triangleq\mathbb{E}_{{\bf z}|{\bf d},\theta^t}\log\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}=\sum_{{\bf z}}\Pr\{{\bf Z}={\bf z}|{\bf d},\theta^t\}\cdot\log\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}
 $$
-where $\theta^t$ is the estimate at $t$-th iteration. For a standard EM, the
-estimate at the $(t+1)$ iteration $\theta^{t+1}$ maximizes $Q(\theta|\theta^t)$:
+As we will show in the next section, if we choose $\theta=\theta^{t+1}$ such that
 $$
 \left.\frac{\partial Q(\theta|\theta^t)}{\partial\theta}\right|_{\theta=\theta^{t+1}}=0
 $$
-It can be proved that $\theta^{t+1}$ increases $\mathcal{L}(\theta)$.
+we have $\mathcal{L}(\theta^{t+1})\ge\mathcal{L}(\theta^t)$.
 
 For a problem solvable by EM, $Q(\theta|\theta^t)$ can usually be expressed in
 the close form or take a simpler form than $\mathcal{L}(\theta)$. EM guarantees
 convergence, but doesn't guarantee to converge to the global maxmium.
+
+\subsection{Proving EM}
+
+Here is the derivation of the EM algorithm in Durbin et al (1998). Because
+$P(d,z|\theta)=P(z|d,\theta)P(d|\theta)$, we have
+$$
+\log P(d|\theta)=\log P(d,z|\theta)-\log P(z|d,\theta)
+$$
+Multiplying $P(z|d,\theta^t)$ and summing over $z$
+$$
+\log P(d|\theta)=\sum_zP(z|d,\theta^t)\log P(d,z|\theta) - \sum_zP(z|d,\theta^t)\log P(z|d,\theta)
+$$
+The first term on the right is the $Q$ function. Then
+$$
+\log P(d|\theta)-\log P(d|\theta^t)=Q(\theta|\theta^t)-Q(\theta^t|\theta^t)+\sum_z P(z|d,\theta^t)\log\frac{P(z|x,\theta^t)}{P(z|d,\theta)}
+$$
+The third term on the right is the relative entropy (aka Kullback-Leibler
+distance), which is always non-negative. Therefore,
+$$
+\log P(d|\theta)-\log P(d|\theta^t)\ge Q(\theta|\theta^t)-Q(\theta^t|\theta^t)
+$$
+If we choose $\theta=\theta^{t+1}$ such that
+$Q(\theta^{t+1}|\theta^t)>Q(\theta^t|\theta^t)$,
+$P(d|\theta^{t+1})>P(d|\theta^t)$. i.e. $\theta^{t+1}$ guarantees increased
+likelihood. For a standard EM, we typically choose $\theta^{t+1}$ at the $(t+1)$
+iteration such that it maximizes $Q(\theta|\theta^t)$.
 
 \newpage
 
