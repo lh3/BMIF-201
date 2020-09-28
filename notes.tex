@@ -204,7 +204,6 @@ $$
 \newpage
 
 \section{Hidden Markov Model (HMM)}
-\subsection{HMM: the basic}
 Let $\mathcal{S}$ be the state space. A homogeneous HMM is defined by:
 $$
 p(t|s)\triangleq\Pr\{Z_i=t|Z_{i-1}=s\}
@@ -213,12 +212,12 @@ $$
 e(a|s)\triangleq\Pr\{X_i=a|Z_i=s\}
 $$
 
-\subsubsection{The Viterbi algorithm}
+\subsection{The Viterbi algorithm}
 $$
 \gamma(i+1,t)=e(a_{i+1}|t)\max_s\gamma(i,s)p(t|s)
 $$
 
-\subsubsection{The forward algorithm}
+\subsection{The forward algorithm}
 \begin{eqnarray*}
 \alpha(i,t)&\triangleq&\Pr\{Z_i=t,X_{1,i}=a_1\cdots a_i\}\\
 &=&\sum_{s\in\mathcal{S}}\Pr\{Z_i=t,Z_{i-1}=s,X_{1,i}=a_1\cdots a_i\}\\
@@ -240,7 +239,7 @@ $$
 P(x)=\Pr\{X_{1,L}=a_1\cdots a_L\}=\sum_s\Pr\{X_{1,L}=a_1\cdots a_L,Z_i=s\}=\sum_s\alpha(i,s)
 $$
 
-\subsubsection{The backward algorithm}
+\subsection{The backward algorithm}
 \begin{eqnarray*}
 \beta(i,s)&\triangleq&\Pr\{X_{i+1,L}=a_{i+1}\cdots a_L|Z_i=s\}\\
 &=&\sum_{t\in\mathcal{S}}\Pr\{X_{i+1,L}=a_{i+1}\cdots a_L,Z_{i+1}=t|Z_i=s\}\\
@@ -254,7 +253,7 @@ $$
 \beta(L,s)=\Pr\{X_{L+1,L+1}={\tt\char36}|Z_L=s\}=1
 $$
 
-\subsubsection{Posterior decoding}
+\subsection{Posterior decoding}
 \begin{eqnarray*}
 && \Pr\{X_{1,L}=a_1\cdots a_L,Z_i=s\}\\
 &=&\Pr\{X_{i+1,L}=a_{i+1}\cdots a_L,X_{1,i}=a_1\cdots a_i,Z_i=s\}\\
@@ -263,6 +262,43 @@ $$
 \end{eqnarray*}
 $$
 \Pr\{Z_i=s|x\}=\frac{\alpha(i,s)\beta(i,s)}{P(x)}
+$$
+$$
+\Pr\{Z_i=s,Z_{i+1}=t|x\}=\frac{1}{P(x)}\cdot\alpha(i,s)p(t|s)\beta(i+1,t)e(a_{i+1}|t)
+$$
+
+\subsection{Avoiding floating point underflow}
+
+For large $L$, $\alpha(i,t)$ can become so small to be expressed with 64-bit
+floating point numbers. Here shows one solution to this practical problem.
+Define
+$$
+\tilde{\alpha}(i,t)\triangleq\frac{\alpha(i,t)}{\prod_{j=1}^is_j}
+$$
+Choose $\{s_i\}$ such that $\sum_t\tilde{\alpha}(i,t)=1$ for all $i$. The
+forward equation becomes:
+$$
+\tilde{\alpha}(i,t)\prod_{j=1}^is_i=e(a_i|t)\sum_s\tilde{\alpha}(i-1,s)p(t|s)\prod_{j=1}^{i-1}s_j
+$$
+Then
+$$
+\tilde{\alpha}(i,t)=\frac{1}{s_i}\cdot e(a_i|t)\sum_s\tilde{\alpha}(i-1,s)p(t|s)
+$$
+Summing over $t$ on both sides, we have
+$$
+s_i=\sum_te(a_i|t)\sum_s\tilde{\alpha}(i-1,s)p(t|s)
+$$
+Similarly, define
+$$
+\tilde{\beta}(i,t)\triangleq\frac{\beta(i,t)}{\prod_{j=i}^Ls_j}
+$$
+The backward equation becomes
+$$
+\tilde{\beta}(i,s)\prod_{j=i}^Ls_j=\sum_t\tilde{\beta}(i+1,t)e(a_{i+1}|t)p(t|s)\prod_{j=i+1}^Ls_j
+$$
+i.e.:
+$$
+\tilde{\beta}(i,s)=\frac{1}{s_j}\cdot\sum_t\tilde{\beta}(i+1,t)e(a_{i+1}|t)p(t|s)
 $$
 
 \newpage
