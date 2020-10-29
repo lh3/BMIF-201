@@ -364,4 +364,213 @@ $$
 P(g|d)=\frac{P(d|g)P(g)}{\sum_hP(d|h)P(h)}=\frac{\mathcal{L}(g)P(g)}{\sum_h\mathcal{L}(h)P(h)}
 $$
 
+\newpage
+
+\section{Multiple sequence alignment (MSA)}
+
+\subsection{Scoring matrix for amino acids}
+
+For a pair of aligned sequences with identity at least $L\%$, count each pair of
+residues $a$ and $b$ in the alignment. Let $C_{ab}$ be the count across many
+sequence pairs. Compute
+$$
+q_a=\frac{\sum_b C_{ab}}{\sum_{c,d}C_{cd}}
+$$
+$$
+p_{ab}=\frac{C_{ab}}{\sum_{c,d}C_{cd}}
+$$
+The score $s(a,b)$ between residue $a$ and $b$ is computed as
+$$
+s(a,b)=\lambda\log\frac{p_{ab}}{q_aq_b}
+$$
+where $\lambda$ is a scaling factor. The resulting matrix is BLOSUM-$L$.
+
+\subsection{Scoring a MSA}
+
+Let $a_{ik}$ be the residue of the $i$-th sequence at column $k$. The
+sum-of-pair column score is defined as
+$$
+S_k\triangleq\sum_{i<j}s(a_{ik},a_{jk})
+$$
+and the total alignment score is
+$$
+\mathcal{S}\triangleq\sum_k S_k
+$$
+
+Given a set of sequences, we can arbitrarily split them into two groups. The
+column score in this case can be expressed as
+$$
+S_k=S^{(1)}_k+S^{(2)}_k+\sum_{a,b}n^{(1)}(a)n^{(2)}(b)s(a,b)
+$$
+where $S^{(1)}$ is the column score within the first group and $n^{(1)}(a)$ is
+the number of residue $a$ in the first group.
+
+\subsection{MSA}
+
+Theoretical formulation: find the alignment such that $\mathcal{S}$ is the
+largest. However, it has been proved that finding the optimal solution requires
+$O(2^nL^n)$ time, where $n$ is the number of input sequences and $L$ is the
+length of sequences. It is impractical to compute the optimal MSA.
+
+In practice, the most popular algorithm is progressive MSA. We first build a
+guide tree and then align a pair of groups at a time. This is extensively used
+in classical MSA tools. Another popular class of algorithms is based on
+partial-order alignment (POA). POA or simplified POA is more frequently used
+for sequencing data.
+
+\newpage
+
+\section{Building phylogenetic trees}
+
+There are four classes of tree building algorithms: distance-based,
+maximum-parsimony, maximum-likelihood and Bayesian. We will only describe the
+two most popular classes here: distance-based and maximum-likelihood.
+
+\subsection{Distance-based algorithms}
+
+Let $d_{ij}$ be the distance between sequence $i$ and $j$. The distance can be
+derived from pairwise alignment, or more accurately, from MSA. For example:
+\begin{verbatim}
+    CAAT----CTAGTAC           CAATC----TAGTAC
+    CAATCGAGATAGTAC           CAATCGAGATAGTAC
+    CAAT--AGCTAGTAC           CAAT--AGCTAGTAC
+        22222                     22223
+\end{verbatim}
+where the numbers below show the number of pairwise mismatches. The optimal
+alignment is shown on the left. However, the optimal pairwise alignment between
+the first two sequences is different.
+
+Given $n$ sequences, there are $n(n+1)/2$ distances in a symmetric distance
+matrix. However, given an unrooted tree, there are only $2n-3$ edges. The key
+rationale behind distance-based methods is to fit more observations with fewer
+parameters. Naively, we may use least-square to fit branch lengths given a tree
+topology. In practice, this may lead to negative branch lengths.
+
+Ths simplest practical algorithm is UPGMA, which is equivalent to hierarchical
+clustering.  Let $C_i$ be a set of sequences. The distance between two sets of
+sequences $C_i$ and $C_j$ is
+$$
+d_{ij}=\frac{1}{|C_i|\cdot|C_j|}\sum_{p\in C_i,q\in C_j}d_{pq}
+$$
+If we merge $C_i$ and $C_j$ into $C_k$, the distance between $C_k$ and another
+set $C_l$ can be computed with
+\begin{eqnarray*}
+d_{kl}&=&\frac{1}{|C_k||C_l|}\sum_{p\in C_k,q\in C_l}d_{pq}\\
+&=&\frac{1}{|C_k|}\cdot\left(\frac{1}{|C_l|}\sum_{p\in C_i,q\in C_l}d_{pq}+\frac{1}{|C_l|}\sum_{p\in C_j,q\in C_l}d_{pq}\right)\\
+&=&\frac{1}{|C_i|+|C_j|}\left(d_{il}|C_i|+d_{jl}|C_j|\right)
+\end{eqnarray*}
+
+UPGMA assumes the presence of a molecular clock (the rate of evolution remains
+the same across different clades). UPGMA trees ore often inconsistent with
+phylogeny. The most widely used distance-based algorithm is neighbor-joining.
+
+\subsection{Maximum-likelihood algorithms}
+
+\subsubsection{Evolution between two sequences}
+
+Given a set of discrete states (four nucleotides in case of DNA sequences),
+The Kolmogorov forward equation discribes the probability of state changes over
+time. Let $P_{ij}(s;t)$ be the probability of seeing state $i$ at time $s$ and
+state $j$ at time $t$. The equation is
+\[
+\frac{\partial {\bf P}(s;t)}{\partial t}={\bf P}(s;t){\bf A}(t)
+\]
+where ${\bf P}(s;t)=(P_{ij}(s;t))_{n\times n}$ and
+\[
+{\bf A}(t)=\left.\frac{\partial {\bf P}(t,u)}{\partial u}\right|_{u=t}
+\]
+For a homogeneous process, ${\bf A}$ does not change with time $t$:
+\[
+{\bf P}'(t)={\bf P}(t){\bf A}
+\]
+\[
+{\bf A}=\left.{\bf P}'(t)\right|_{t=0}
+\]
+On each row in ${\bf A}$, the sum of columns equals 0. ${\bf A}$ is called the
+\emph{rate} matrix. \emph{Scaled mutation} rate has the same meaning.
+
+Two-allele model:
+\[
+{\bf A}=\left(\begin{array}{cccc}
+-\theta & \theta \\
+\theta & -\theta \\
+\end{array}\right)
+\]
+\[
+{\bf P}(t)=\left(\begin{array}{cc}
+r(t) & s(t) \\
+s(t) & r(t) \\
+\end{array}\right)
+\]
+\[
+\left(\begin{array}{cc}
+\dot{r}(t) & \dot{s}(t) \\
+\dot{s}(t) & \dot{r}(t) \\
+\end{array}\right)
+=
+\left(\begin{array}{cc}
+r(t) & s(t) \\
+s(t) & r(t) \\
+\end{array}\right)
+\cdot
+\left(\begin{array}{cc}
+-\theta & \theta \\
+\theta & -\theta \\
+\end{array}\right)
+\]
+We have
+$$
+\dot{r}=-r\theta+(1-r)\cdot\theta
+$$
+\[
+r(t)=\frac{1}{2}\left(1+e^{-2\theta t}\right)
+\]
+
+Jukes-cantor model:
+\[
+{\bf A}=\left(\begin{array}{cccc}
+-3\alpha & \alpha & \alpha & \alpha \\
+\alpha & -3\alpha & \alpha & \alpha \\
+\alpha & \alpha & -3\alpha & \alpha \\
+\alpha & \alpha & \alpha & -3\alpha \\
+\end{array}\right)
+\]
+\[
+{\bf P}(t)=\left(\begin{array}{cccc}
+r(t) & s(t) & s(t) & s(t) \\
+s(t) & r(t) & s(t) & s(t) \\
+s(t) & s(t) & r(t) & s(t) \\
+s(t) & s(t) & s(t) & r(t) \\
+\end{array}\right)
+\]
+\[
+r(t)=\frac{1}{4}(1+3e^{-4\alpha t})
+\]
+\[
+s(t)=\frac{1}{4}(1-e^{-4\alpha t})
+\]
+
+This is a \emph{reversible} model, which leads to an unrooted tree.
+\subsubsection{Felsenstein's algorithm}
+
+\begin{eqnarray*}
+\alpha(v,a)&\triangleq&\Pr\{[v,a]\Rightarrow\sigma(T_v)\}\\
+&=&\sum_{b,c}\Pr\big\{[v,a]\Rightarrow([u,b],[w,c])\Rightarrow(\sigma(T_u),\sigma(T_w))\big\}\\
+&=&\sum_{b,c}\Pr\big\{[v,a]\Rightarrow([u,b],[w,c])\big\}\cdot\Pr\big\{[u,b]\Rightarrow\sigma(T_u),[w,c]\Rightarrow\sigma(T_w)\big\}\\
+&=&\sum_{b,c}p_u(b|a,t_{vu})p_w(c|a,t_{vw})\alpha(u,b)\alpha(w,c)\\
+&=&\left(\sum_b \alpha(u,b)p_u(b|a,t_{vu})\right)\cdot\left(\sum_c \alpha(w,c)p_w(c|a,t_{vw})\right)\\
+&=&\alpha'(u,a)\alpha'(w,a)
+\end{eqnarray*}
+where
+$$ \alpha'(u,a)=\sum_b p_u(b|a)\alpha(u,b) $$
+
+\subsection{Practical concerns}
+
+RAxML, PhyML and IQ-tree for ML. MrBayes for Bayesian. FastME for
+distance-based.
+
+Rooting. Long-branch attraction. NNI. Boostrapping and likelihood-ratio test.
+Homolog, ortholog and paralog. dN/dS.  Duplication/loss inference. Incomplete
+lineage sorting. Newick or New Hampshire format. Horizontal gene transfer.
+
 \end{document}
