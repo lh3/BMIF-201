@@ -124,57 +124,31 @@ $P(d|\theta^{t+1})>P(d|\theta^t)$. i.e. $\theta^{t+1}$ guarantees increased
 likelihood. For a standard EM, we typically choose $\theta^{t+1}$ at the $(t+1)$
 iteration such that it maximizes $Q(\theta|\theta^t)$.
 
-\newpage
-
 \section{Resolving ambiguously mapped reads for RNA-seq}
 
-Suppose we have $N$ transcripts and $R$ reads. $p_k$ is the probability of
-transcript $k$, $k=1,\ldots,N$. $\theta=\{p_k\}_k$ is the set of parameters.
-$Z_i\in\{1,\ldots,N\}$ is the true origin of read $i$. It is a latent variable.
-Let $\alpha_{iz}\triangleq\Pr\{d_i|Z_i=z\}$ be the probability of read $i$
-being generated from transcript $z$. For a simple model, let $l_z$ be the
-\emph{effective} length of transcript $z$. We can compute $\alpha_{iz}=1/l_z$
-if the hit to $z$ is one of the equally best hits of read $i$; otherwise
-$\alpha_{iz}=0$.
-\[
-\Pr\{d_i,Z_i=z|\theta\}=\Pr\{d_i|Z_i=z\}\Pr\{Z_i=z|\theta\}=\alpha_{iz}p_z
-\]
-\[
-\beta_{iz}(\theta)\triangleq\Pr\{Z_i=z|d_i,\theta\}=\frac{\alpha_{iz}p_z}{\sum_{y}\alpha_{iy}p_y}
-\]
-$\beta_{iz}$ is the posterior probability that read $i$ comes from transcript
-$z$. The likelihood function is
+Suppose we have $N$ transcripts and $R$ reads.
+Define
 $$
-\mathcal{L}(\theta)=\sum_{\bf z}\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}=\sum_{z_1=1}^N\cdots\sum_{z_R=1}^N\prod_{i=1}^R\Pr\{d_i,Z_i=z_i|\theta\}
-=\sum_{z_1=1}^N\cdots\sum_{z_R=1}^N\prod_{i=1}^R\alpha_{iz_i}p_{z_i}
+\delta_{it}=\left\{\begin{array}{ll}
+1 & \mbox{if read $i$ hits transcript $t$} \\
+0 & \mbox{otherwise}
+\end{array}\right.
 $$
-There are $R^N$ terms. It is difficult to directly derive the MLE of $p_z$.
-We now solve this problem with EM. As a preparation
-\[
-\log\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}=\log\Pr\{{\bf d}|{\bf Z}={\bf z}\}\Pr\{{\bf Z}={\bf z}|\theta\}=C+\sum_i\log p_{z_i}
-\]
-where $C$ is not a function of parameters $\theta$.
-
-We now compute the $Q$ function:
-\begin{eqnarray*}
-Q(\theta|\theta^t)&=&\sum_{{\bf z}}\Pr\{{\bf Z}={\bf z}|{\bf d},\theta^t\}\cdot\log\Pr\{{\bf d},{\bf Z}={\bf z}|\theta\}\\
-&=&C+\sum_{{\bf z}}\prod_j\Pr\{Z_j=z_j|d_j,\theta^t\}\sum_i\log p_{z_i}\\
-&=&C+\sum_{i=1}^R\sum_{z_i=1}^N\Pr\{Z_i=z_i|d_i,\theta^t\}\log p_{z_i}\\
-&=&C+\sum_{i=1}^R\sum_{z=1}^N\beta_{iz}(\theta^t)\log p_z
-\end{eqnarray*}
-Under constraint $\sum_zp_z=1$, requiring
-$\partial_{p_y}(Q-\lambda\sum_zp_z)=0$ leads to
-\[
-p_y=\frac{1}{\lambda}\sum_i\beta_{iy}(\theta^t)
-\]
-and thus
-\[
-\lambda=\sum_i\sum_z\beta_{iz}(\theta^t)=R
-\]
-Then
-\[
-p_y^{(t+1)}=\frac{1}{R}\sum_i\beta_{iy}(\theta^t)=\frac{1}{R}\sum_i\frac{\alpha_{iz}p^{(t)}_z}{\sum_{y}\alpha_{iy}p^{(t)}_y}=\frac{1}{R}\sum_i\frac{p_z^{(t)}/l_z}{\sum_yp_y^{(t)}/l_y}
-\]
+Let $p_t$ be the probability of transcript $t$, $t=1,\ldots,N$.
+The probability of a read being sequenced from $t$ is
+$$
+q_t=\frac{p_tl_t}{\sum_s{p_sl_s}}
+$$
+Suppose we know $\{p_t\}$, the expected value $\{\bar{q}_t\}$ can be calculated with
+$$
+\bar{q}_t=\frac{1}{R}\sum_i\frac{p_t\delta_{it}}{\sum_s{p_s\delta_{is}}}
+=\frac{1}{R}\sum_i\frac{(q_t/l_t)\cdot\delta_{it}}{\sum_s{(q_s/l_s)\cdot\delta_{is}}}
+$$
+Once we get the estimate of $\{q_t\}$, we can calculate $\{p_t\}$ with
+$$
+p_t=\frac{q_t/l_l}{\sum_s q_s/l_s}
+$$
+The TPM of transcript $t$ equals $p_t\cdot10^6$.
 
 \newpage
 
