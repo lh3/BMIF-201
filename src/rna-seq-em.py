@@ -21,11 +21,11 @@ def q2p(q, l): # convert nucleotide fraction q to transcript fraction p
   p = [p[t] / s for t in range(N)]
   return p
 
-l = [200, 400, 150]
+l = [200, 500, 300]
 a = [[0,1], [0,1], [1], [1], [2]]
 
 q = [1./len(l)] * len(l)
-for i in range(25):
+for i in range(100):
   em1(q, l, a)
   p = q2p(q, l)
   print("\t".join(["{0:.4f}".format(j) for j in p]))

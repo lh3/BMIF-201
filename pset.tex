@@ -113,6 +113,19 @@ independent. Due to actual $k$-mer dependencies, the estimate varies with $k$.
 
 
 \begin{question}
+Suppose there are three transcripts of 200bp, 500bp and 300bp in length, respectively.
+Five reads are mapped to these transcripts. Read A and B are mapped to transcript 1 and 2,
+read C and D to transcript 2 only and read E is mapped to transcript 3 only.
+Use EM to estimate the transcript fraction of the three transcripts.
+\end{question}
+
+\begin{proof}
+25\%, 50\% and 25\%. Source code: \href{https://ideone.com/F02WCa}{https://ideone.com/F02WCa}.
+\end{proof}
+
+
+
+\begin{question}
 Implement a simplified CNV caller using HMM. Suppose after read mapping, we
 symbolize a series of loci into a sequence like ``${\tt
 11111110102222211110111}$'' where symbol `${\tt 1}$' for normal coverage,
