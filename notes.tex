@@ -29,8 +29,7 @@ $$
 P(A|B)=\frac{P(B|A)P(A)}{P(B)}
 $$
 
-\begin{comment}
-An example. Let
+An example of joint and marginal probability. Let
 $$
 X=\left\{\begin{array}{ll}
 1 & \mbox{if sunny} \\
@@ -49,7 +48,7 @@ $$
 $$
 \Pr\{X=x\}=\sum_y\Pr\{X=x,Y=y\}
 $$
-\end{comment}
+It is a common technique to add a latent variable if the original probability is hard to calculate.
 
 \subsection{Likelihood and maximum likelihood estimation (MLE)}
 
@@ -68,9 +67,61 @@ $$
 \left.\frac{\partial \log\mathcal{L}(\theta)}{\partial\theta}\right|_{\theta=\hat{\theta}}=0
 $$
 
-\begin{comment}
-An example. Suppose in the last August, 20 out of 31 days were sunny.
-\end{comment}
+An example. Suppose after throwing a coin for $n$ times, we see heads for $m$ times.
+What is the probability $p$ of seeing a head?
+$$
+\mathcal{L}(p)=P({\bf d}|p)=\prod_iP(d_i|p)=p^m\cdot(1-p)^{n-m}
+$$
+$$
+\log\mathcal{L}(p)=m\log p+(n-m)\log(1-p)
+$$
+$$
+\frac{\partial}{\partial p}\log\mathcal{L}=\frac{m}{p}-\frac{n-m}{1-p}
+$$
+The MLE $\hat{p}$ satisfies
+$$
+\left.\frac{\partial}{\partial p}\log\mathcal{L}(p)\right|_{p=\hat{p}}=0
+$$
+Solving the equation gives $\hat{p}=m/n$.
+
+A second example. Suppose we throw a dice for many times and we see number $k$ for $n_k$ times.
+What is the probabioity $p_k$ of seeing number $k$?
+$$
+\mathcal{L}({\bf p})=P({\bf d}|{\bf p})=\prod_iP(d_i|{\bf p})=\prod_{k=1}^6 p_k^{n_k}
+$$
+$$
+\frac{\partial}{\partial p_k}\log\mathcal{L}({\bf p})=\frac{n_k}{p_k}
+$$
+We use the method of Lagrange multipliers to find the maximum on the constraint $\sum_kp_k=1$:
+$$
+\left.\frac{\partial}{\partial p_k}\left[\log\mathcal{L}({\bf p})-\lambda\left(\sum_lp_l-1\right)\right]\right|_{p_k=\hat{p}_k}=0
+$$
+Expanding this
+$$
+n_k=\lambda\cdot \hat{p}_k
+$$
+Suming over both sides
+$$
+\lambda=\sum_k n_k
+$$
+and thus
+$$
+\hat{p}_k = \frac{n_k}{\sum_ln_l}
+$$
+
+A third example.
+Suppose we have two coins with head numbered ``0'' and tail numbered ``1''.
+The chance of seeing 0 for the first coin is $p_{00}$ and the chance of seeing 0 for the second coin is $p_{10}$.
+$p_{01}=1-p_{00}$ and $p_{11}=1-p_{10}$.
+Now we toss both coins at the same time and sum the two numbers each time.
+We get 0 for $n_0$ times, 1 for $n_1$ times and 2 for $n_2$ times.
+What is the MLE of $p_{00}$ and $p_{11}$?
+The likelihood function for this problem is
+$$
+\mathcal{L}({\bf p})=(p_{00}p_{10})^{n_0}\cdot(p_{01}p_{10}+p_{10}p_{01})^{n_1}\cdot(p_{01}p_{11})^{n_2}
+$$
+There is not an analytical solution to this maximization problem,
+but in priciple, we can find numerical solutions.
 
 \subsection{The estimation-maximization algorithm (EM)}
 
@@ -126,6 +177,7 @@ iteration such that it maximizes $Q(\theta|\theta^t)$.
 
 \section{Resolving ambiguously mapped reads for RNA-seq}
 
+\subsection{Intuition}
 Suppose we have $N$ transcripts and $R$ reads.
 Define
 $$
@@ -134,21 +186,66 @@ $$
 0 & \mbox{otherwise}
 \end{array}\right.
 $$
-Let $p_t$ be the probability of transcript $t$, $t=1,\ldots,N$.
+Let $p_t$ be the fraction of transcript $t$, $t=1,\ldots,N$.
 The probability of a read being sequenced from $t$ is
-$$
+\begin{equation}\label{eq:p2q}
 q_t=\frac{p_tl_t}{\sum_s{p_sl_s}}
-$$
-Suppose we know $\{p_t\}$, the expected value $\{\bar{q}_t\}$ can be calculated with
+\end{equation}
+or conversely,
+\begin{equation}\label{eq:q2p}
+p_t=\frac{q_t/l_t}{\sum_s q_s/l_s}
+\end{equation}
+$q_t$ is also called the nucleotide fraction of transcript $t$.
+
+Suppose we know $\{p_t\}$. The expected value $\{\bar{q}_t\}$ can be calculated with
 $$
 \bar{q}_t=\frac{1}{R}\sum_i\frac{p_t\delta_{it}}{\sum_s{p_s\delta_{is}}}
 =\frac{1}{R}\sum_i\frac{(q_t/l_t)\cdot\delta_{it}}{\sum_s{(q_s/l_s)\cdot\delta_{is}}}
 $$
-Once we get the estimate of $\{q_t\}$, we can calculate $\{p_t\}$ with
-$$
-p_t=\frac{q_t/l_l}{\sum_s q_s/l_s}
-$$
+With the EM procedure, we calculate
+\begin{equation}\label{eq:rna-em}
+q_t^{(k+1)}=\frac{1}{R}\sum_i\frac{\delta_{it}q_t^{(k)}/l_t}{\sum_s{\delta_{is}q_s^{(k)}/l_s}}
+\end{equation}
+until it converges.
+We then derive the transcript fraction $\{p_t\}$ with Eq.~(\ref{eq:q2p}).
 The TPM of transcript $t$ equals $p_t\cdot10^6$.
+
+\subsection{Proving the RNA-seq EM}
+
+The EM algorithm for RNA-seq quantification was first proposed by Li \emph{et
+al.} (2010) and then popularized by kallisto (Bray \emph{et al.}, 2016) and
+salmon (Patro \emph{et al.}, 2017).
+However, the formulations between these papers are different.
+The derivation here is again different from them.
+Students are recommended to read these three papers.
+
+For read $i$, let $Z_i$ be the transcript that read $i$ is originated.
+It is a latent variable that cannot be observed.
+We have $\Pr\{Z_i=t|\theta\}=q_t$ and further
+\[
+\log\Pr\{{\bf d},{\bf Z}={\bf t}|\theta\}=\log\Pr\{{\bf d}|{\bf Z}={\bf t}\}\Pr\{{\bf Z}={\bf t}|\theta\}=C+\sum_i\log q_{z_i}
+\]
+where $C$ is not a function of $\theta$.
+To compute the EM Q function, we also need to compute the posterior
+$$
+\Pr\{Z_i=t|d_i,\theta\}=\frac{p_t\delta_{it}}{\sum_{s}p_s\delta_{is}}
+$$
+With these, we can derive
+\begin{eqnarray*}
+Q(\theta|\theta^k)&=&\sum_{{\bf t}}\Pr\{{\bf Z}={\bf t}|{\bf d},\theta^k\}\cdot\log\Pr\{{\bf d},{\bf Z}={\bf t}|\theta\}\\
+&=&C+\sum_{{\bf t}}\prod_j\Pr\{Z_j=t_j|d_j,\theta^k\}\sum_i\log q_{t_i}\\
+&=&C+\sum_{i=1}^R\sum_{t=1}^N\Pr\{Z_i=t|d_i,\theta^k\}\log q_t\\
+\end{eqnarray*}
+We use the method of Lagrange multipliers to find the optima of $Q$:
+$$
+\nabla_q\left[Q(\theta|\theta^k)-\lambda\left(\sum_sq_s-1\right)\right]=0
+$$
+Solving the equation gives
+$$
+q^{(k+1)}_t=\frac{1}{R}\sum_i\Pr\{Z_i=t|d_i,\theta^k\}=\frac{1}{R}\sum_i\frac{p^{(k)}_t\delta_{it}}{\sum_s{p^{(k)}_s\delta_{is}}}
+=\frac{1}{R}\sum_i\frac{\delta_{it}q^{(k)}_t/l_t}{\sum_s{\delta_{is}q^{(k)}_s/l_s}}
+$$
+which is Eq.~(\ref{eq:rna-em}).
 
 \newpage
 
@@ -213,6 +310,7 @@ e(a|s)\triangleq\Pr\{X_i=a|Z_i=s\}
 $$
 
 \subsection{The Viterbi algorithm}
+$\gamma(i,t)$ is the maximum probability of sequence $a_1\cdots a_i$ with $Z_i=t$.
 $$
 \gamma(i+1,t)=e(a_{i+1}|t)\max_s\gamma(i,s)p(t|s)
 $$
