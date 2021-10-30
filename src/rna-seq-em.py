@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 def em1(q, l, a): # one round of EM
   N, R = len(q), len(a) # #transcripts, #reads
   if len(q) != len(l): raise "Error!"
