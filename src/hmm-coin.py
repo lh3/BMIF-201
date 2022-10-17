@@ -53,7 +53,7 @@ def hmm_decode(f, b):
     x = [f[i][0]*b[i][0], f[i][1] * b[i][1]]
     x0 = x[0] / (x[0] + x[1])
     l = 0 if x0 > 0.5 else 1
-    #print("{}\t{}\t{}".format(i, x0, x[0] + x[1]))
+    print("{}\t{}\t{}".format(i, x0, x[0] + x[1]))
     sd += "FC"[l]
   return sd
 

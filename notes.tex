@@ -118,7 +118,7 @@ We get 0 for $n_0$ times, 1 for $n_1$ times and 2 for $n_2$ times.
 What is the MLE of $p_{00}$ and $p_{11}$?
 The likelihood function for this problem is
 $$
-\mathcal{L}({\bf p})=(p_{00}p_{10})^{n_0}\cdot(p_{01}p_{10}+p_{10}p_{01})^{n_1}\cdot(p_{01}p_{11})^{n_2}
+\mathcal{L}({\bf p})=(p_{00}p_{10})^{n_0}\cdot(p_{01}p_{10}+p_{00}p_{11})^{n_1}\cdot(p_{01}p_{11})^{n_2}
 $$
 There is not an analytical solution to this maximization problem,
 but in priciple, we can find numerical solutions.
@@ -147,6 +147,7 @@ we have $\mathcal{L}(\theta^{t+1})\ge\mathcal{L}(\theta^t)$.
 
 For a problem solvable by EM, $Q(\theta|\theta^t)$ can usually be expressed in
 the close form or take a simpler form than $\mathcal{L}(\theta)$. EM guarantees
+
 convergence, but doesn't guarantee to converge to the global maxmium.
 
 \subsection{Proving EM}
@@ -174,6 +175,61 @@ $Q(\theta^{t+1}|\theta^t)>Q(\theta^t|\theta^t)$,
 $P(d|\theta^{t+1})>P(d|\theta^t)$. i.e. $\theta^{t+1}$ guarantees increased
 likelihood. For a standard EM, we typically choose $\theta^{t+1}$ at the $(t+1)$
 iteration such that it maximizes $Q(\theta|\theta^t)$.
+
+\subsection{Solving the two-coin problem with EM}
+
+The probability of drawing HT (first coin Head and second coin Tail) is
+$p_{00}p_{11}$ and the probability of drawing TH is $p_{01}p_{10}$. Define
+$$
+r=\frac{p_{00}p_{11}}{p_{00}p_{11}+p_{01}p_{10}}
+$$
+If we draw $n_1$ HT and TH in total, $n_1r$ will be HT and $n_1(1-r)$ will be
+TH. With this, we can estimate $p_{00}$ and $p_{10}$ for the next round:
+$$
+p^{(k+1)}_{00}=\frac{n_0+n_1r^{(k)}}{n_0+n_1+n_2}
+$$
+$$
+p^{(k+1)}_{10}=\frac{n_0+n_1(1-r^{(k)})}{n_0+n_1+n_2}
+$$
+
+\newpage
+
+\section{Variant calling models}
+
+\subsection{Genotype likelihood}
+Let ${\bf d}$ be a list of read bases.
+\begin{eqnarray*}
+\Pr\{{\bf d}|G=\langle a,b\rangle\}
+&=&\prod_i\Pr\{d_i|G=\langle a,b\rangle\}\\
+&=&\prod_i\Big[\Pr\{d_i,\mbox{choose $a$ allele}|G=\langle a,b\rangle\}+\Pr\{d_i,\mbox{choose $b$ allele}|G=\langle a,b\rangle\}\Big]\\
+&=&\prod_i\Big[\Pr\{d_i|\mbox{choose $a$ allele},G=\langle a,b\rangle\}\Pr\{\mbox{choose $a$ allele}|G=\langle a,b\rangle\}\\
+&&+\Pr\{d_i,\mbox{choose $b$ allele}|G=\langle a,b\rangle\}\Big]\\
+&=&\prod_i\frac{P(d_i|a)+P(d_i|b)}{2}
+\end{eqnarray*}
+
+An example. Suppose at a position there are 3 ``A'' bases and 7 ``C'' bases,
+all at base quality 20, i.e. $\epsilon=0.01$.
+\begin{eqnarray*}
+\mathcal{L}(\langle{\tt A},{\tt A}\rangle)&=&\epsilon^{n_C}(1-\epsilon)^{n_A}\approx10^{-6}=Q60\\
+\mathcal{L}(\langle{\tt C},{\tt C}\rangle)&=&\epsilon^{n_A}(1-\epsilon)^{n_C}\approx10^{-14}=Q140\\
+\mathcal{L}(\langle{\tt A},{\tt C}\rangle)&=&\frac{1}{2^{n_A+n_C}}=2^{-10}\approx Q30
+\end{eqnarray*}
+Note that $-10\log_{10}0.5=3.010$, so $1/2$ is equivalent to Q3 approximately.
+
+\subsection{Bayesian variant callers}
+If ${\tt R}$ is the reference base, ${\tt A}$ is the alternate and $\theta$ is
+the scaled mutation rate, under the Wright-Fisher model:
+\begin{eqnarray*}
+P(\langle{\tt R},{\tt A}\rangle)&=&\theta\\
+P(\langle{\tt A},{\tt A}\rangle)&=&\frac{\theta}{2}\\
+P(\langle{\tt R},{\tt R}\rangle)&=&1-\frac{3\theta}{2}\\
+\end{eqnarray*}
+For human, $\theta\approx10^{-3}$. The posterior:
+$$
+P(g|d)=\frac{P(d|g)P(g)}{\sum_hP(d|h)P(h)}=\frac{\mathcal{L}(g)P(g)}{\sum_h\mathcal{L}(h)P(h)}
+$$
+
+\newpage
 
 \section{Resolving ambiguously mapped reads for RNA-seq}
 
@@ -397,43 +453,6 @@ $$
 i.e.:
 $$
 \tilde{\beta}(i,s)=\frac{1}{s_j}\cdot\sum_t\tilde{\beta}(i+1,t)e(a_{i+1}|t)p(t|s)
-$$
-
-\newpage
-
-\section{Variant calling models}
-
-\subsection{Genotype likelihood}
-Let ${\bf d}$ be a list of read bases.
-\begin{eqnarray*}
-\Pr\{{\bf d}|G=\langle a,b\rangle\}
-&=&\prod_i\Pr\{d_i|G=\langle a,b\rangle\}\\
-&=&\prod_i\Big[\Pr\{d_i,\mbox{choose $a$ allele}|G=\langle a,b\rangle\}+\Pr\{d_i,\mbox{choose $b$ allele}|G=\langle a,b\rangle\}\Big]\\
-&=&\prod_i\Big[\Pr\{d_i|\mbox{choose $a$ allele},G=\langle a,b\rangle\}\Pr\{\mbox{choose $a$ allele}|G=\langle a,b\rangle\}\\
-&&+\Pr\{d_i,\mbox{choose $b$ allele}|G=\langle a,b\rangle\}\Big]\\
-&=&\prod_i\frac{P(d_i|a)+P(d_i|b)}{2}
-\end{eqnarray*}
-
-An example. Suppose at a position there are 3 ``A'' bases and 7 ``C'' bases,
-all at base quality 20, i.e. $\epsilon=0.01$.
-\begin{eqnarray*}
-\mathcal{L}(\langle{\tt A},{\tt A}\rangle)&=&\epsilon^{n_C}(1-\epsilon)^{n_A}\approx10^{-6}=Q60\\
-\mathcal{L}(\langle{\tt C},{\tt C}\rangle)&=&\epsilon^{n_A}(1-\epsilon)^{n_C}\approx10^{-14}=Q140\\
-\mathcal{L}(\langle{\tt A},{\tt C}\rangle)&=&\frac{1}{2^{n_A+n_C}}=2^{-10}\approx Q30
-\end{eqnarray*}
-Note that $-10\log_{10}0.5=3.010$, so $1/2$ is equivalent to Q3 approximately.
-
-\subsection{Bayesian variant callers}
-If ${\tt R}$ is the reference base, ${\tt A}$ is the alternate and $\theta$ is
-the scaled mutation rate, under the Wright-Fisher model:
-\begin{eqnarray*}
-P(\langle{\tt R},{\tt A}\rangle)&=&\theta\\
-P(\langle{\tt A},{\tt A}\rangle)&=&\frac{\theta}{2}\\
-P(\langle{\tt R},{\tt R}\rangle)&=&1-\frac{3\theta}{2}\\
-\end{eqnarray*}
-For human, $\theta\approx10^{-3}$. The posterior:
-$$
-P(g|d)=\frac{P(d|g)P(g)}{\sum_hP(d|h)P(h)}=\frac{\mathcal{L}(g)P(g)}{\sum_h\mathcal{L}(h)P(h)}
 $$
 
 \newpage
