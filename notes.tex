@@ -192,6 +192,8 @@ $$
 p^{(k+1)}_{10}=\frac{n_0+n_1(1-r^{(k)})}{n_0+n_1+n_2}
 $$
 
+Code available at \href{https://ideone.com/tLGpDM}{https://ideone.com/tLGpDM}.
+
 \newpage
 
 \section{Variant calling models}
@@ -364,6 +366,18 @@ $$
 $$
 e(a|s)\triangleq\Pr\{X_i=a|Z_i=s\}
 $$
+HMM is a generative model.
+
+\subsection{Applications of HMM}
+
+\begin{itemize}
+\item Pairwise Sequentially Markovian Coalesent model (PSMC)
+\item Phasing (Li-Stephens)
+\item Gene finding
+\item Copy-number caller
+\item Pairwise alignment
+\item Multiple sequence alignment
+\end{itemize}
 
 \subsection{The Viterbi algorithm}
 $\gamma(i,t)$ is the maximum probability of sequence $a_1\cdots a_i$ with $Z_i=t$.
@@ -390,7 +404,7 @@ $p(t|\epsilon)=q(t)$.
 
 The probability of a sequence
 $$
-P(x)=\Pr\{X_{1,L}=a_1\cdots a_L\}=\sum_s\Pr\{X_{1,L}=a_1\cdots a_L,Z_i=s\}=\sum_s\alpha(i,s)
+P(x)=\Pr\{X_{1,L}=a_1\cdots a_L\}=\sum_s\Pr\{X_{1,L}=a_1\cdots a_L,Z_i=s\}=\sum_s\alpha(L,s)
 $$
 
 \subsection{The backward algorithm}
