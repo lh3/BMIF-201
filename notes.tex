@@ -1,13 +1,14 @@
 \documentclass[10pt]{article}
-
+\usepackage[margin=1in,footskip=0.25in]{geometry}
 \usepackage{graphicx}
 \usepackage{amssymb}
-\usepackage[margin=1in,footskip=0.25in]{geometry}
+\usepackage{amsmath}
 \usepackage{comment}
 
 \usepackage{hyperref}
 
 \renewcommand{\ttdefault}{cmtt}
+\DeclareMathOperator*{\argmax}{argmax}
 
 \begin{document}
 
@@ -179,9 +180,10 @@ iteration such that it maximizes $Q(\theta|\theta^t)$.
 \subsection{Solving the two-coin problem with EM}
 
 The probability of drawing HT (first coin Head and second coin Tail) is
-$p_{00}p_{11}$ and the probability of drawing TH is $p_{01}p_{10}$. Define
+$p_{00}p_{11}$ and the probability of drawing TH is $p_{01}p_{10}$. Let
+$Z\in\{0,1\}$ indicate which coin gets H when we see a sum of 1. We have
 $$
-r=\frac{p_{00}p_{11}}{p_{00}p_{11}+p_{01}p_{10}}
+r\triangleq\Pr\{Z_i=0|d_i=1,\theta\}=\frac{p_{00}p_{11}}{p_{00}p_{11}+p_{01}p_{10}}
 $$
 If we draw $n_1$ HT and TH in total, $n_1r$ will be HT and $n_1(1-r)$ will be
 TH. With this, we can estimate $p_{00}$ and $p_{10}$ for the next round:
@@ -255,9 +257,15 @@ p_t=\frac{q_t/l_t}{\sum_s q_s/l_s}
 \end{equation}
 $q_t$ is also called the nucleotide fraction of transcript $t$.
 
+Let $1\le Z_i\le N$ be the true transcript that read $i$ is derived from. The
+posterior probability of $i$ coming from $t$ is:
+$$
+\Pr\{Z_i=t|d_i,\theta\}=\frac{p_t\delta_{it}}{\sum_{s}p_s\delta_{is}}
+$$
+
 Suppose we know $\{p_t\}$. The expected value $\{\bar{q}_t\}$ can be calculated with
 $$
-\bar{q}_t=\frac{1}{R}\sum_i\frac{p_t\delta_{it}}{\sum_s{p_s\delta_{is}}}
+\bar{q}_t=\frac{1}{R}\sum_i{\Pr\{Z_i=t|d_i,\theta\}}=\frac{1}{R}\sum_i\frac{p_t\delta_{it}}{\sum_s{p_s\delta_{is}}}
 =\frac{1}{R}\sum_i\frac{(q_t/l_t)\cdot\delta_{it}}{\sum_s{(q_s/l_s)\cdot\delta_{is}}}
 $$
 With the EM procedure, we calculate
@@ -456,18 +464,235 @@ Summing over $t$ on both sides, we have
 $$
 s_i=\sum_te(a_i|t)\sum_s\tilde{\alpha}(i-1,s)p(t|s)
 $$
+The probability of the sequence is
+$$
+P(x)=\sum_t\alpha(L,t)=\prod_{j=1}^Ls_j\cdot\sum_t\tilde{\alpha}(L,t)=\prod_{j=1}^Ls_j
+$$
 Similarly, define
 $$
-\tilde{\beta}(i,t)\triangleq\frac{\beta(i,t)}{\prod_{j=i}^Ls_j}
+\tilde{\beta}(i,t)\triangleq\frac{\beta(i,t)}{\prod_{j=i+1}^Ls_j}
 $$
 The backward equation becomes
 $$
-\tilde{\beta}(i,s)\prod_{j=i}^Ls_j=\sum_t\tilde{\beta}(i+1,t)e(a_{i+1}|t)p(t|s)\prod_{j=i+1}^Ls_j
+\tilde{\beta}(i,s)\prod_{j=i+1}^Ls_j=\sum_t\tilde{\beta}(i+1,t)e(a_{i+1}|t)p(t|s)\prod_{j=i+2}^Ls_j
 $$
 i.e.:
 $$
-\tilde{\beta}(i,s)=\frac{1}{s_j}\cdot\sum_t\tilde{\beta}(i+1,t)e(a_{i+1}|t)p(t|s)
+\tilde{\beta}(i,s)=\frac{1}{s_{i+1}}\cdot\sum_t\tilde{\beta}(i+1,t)e(a_{i+1}|t)p(t|s)
 $$
+
+\newpage
+
+\section{Phasing}
+
+In this section, we assume there are $m$ heterozygous biallelic SNPs. Without
+losing generality
+\footnote{From Wikipedia: The term is used to indicate the
+assumption that follows is chosen arbitrarily, narrowing the premise to a
+particular case, but does not affect the validity of the proof in general.},
+we assign the reference allele to number 1 while the alternate allele to -1.
+
+\subsection{Population-based phasing and imputation with Li-Stephens HMM}
+
+Suppose there are $n$ known haplotypes over $m$ beallelic SNPs.
+$h_i(k)\in\{1,-1\}$ is the allele on haplotype $k$ at position $i$. We
+\emph{observe} unphased diploid genotype $\langle x_i,y_i\rangle$ at position
+$i$. In the Li-Stephens HMM, the hidden state is a phased haplotype pair
+$(a_i,b_i)$, $1\le a_i,b_i\le n$. The transition probability is
+$$
+P(a_{i+1},b_{i+1}|a_i,b_i)=\left\{\begin{array}{ll}
+(1-r)(1-r) & \mbox{if $a_{i+1}=a_i$ and $b_{i+1}=b_i$} \\
+r(1-r) & \mbox{if $a_{i+1}=a_i$ and $b_{i+1}\not=b_i$} \\
+r(1-r) & \mbox{if $a_{i+1}\not=a_i$ and $b_{i+1}=b_i$} \\
+r^2 & \mbox{if $a_{i+1}\not=a_i$ and $b_{i+1}\not=b_i$} \\
+\end{array}\right.
+$$
+and the emission probability is
+$$
+P(\langle x_i,y_i\rangle|a_i,b_i)=\left\{\begin{array}{ll}
+(1-\epsilon)^2 & \mbox{if $\langle x_i,y_i\rangle=\langle h_i(a_i),h_i(b_i)\rangle$} \\
+2\epsilon(1-\epsilon) & \mbox{if one allele matches and the other allele mismatches} \\
+\epsilon^2 & \mbox{if both alleles unmatch}\\
+1 & \mbox{if $\langle x_i,y_i\rangle$ is missing data} \\
+\end{array}\right.
+$$
+where $r$ models the recombination rate and $\epsilon$ models the genotyping
+error rate or the rate of (allelic) gene conversions.
+
+We use the Viterbi algorithm or posterior decoding to inferred the path of
+hidden states
+$(\hat{a}_1,\hat{b}_1)\to(\hat{a}_2,\hat{b}_2)\to\cdots\to(\hat{a}_n,\hat{b}_n)$.
+Then the phasing of the diploid sample is $h_1(\hat{a}_1)\cdots h_n(\hat{a}_n)$
+vs $h_1(\hat{b}_1)\cdots h_n(\hat{b}_n)$. This algorithm also imputes missing
+genotypes.
+
+\subsection{Long-read phasing}
+
+There are $n$ fragments and $m$ heterozygous SNPs. For fragment $k$, let $I_k$
+be the set of SNPs on $k$. Similarly, for SNP $i$, let $K_i$ be the set of
+fragments that overlap with $i$.  $q_{ki}(x)$, $x\in\{1,-1\}$ and $i\in I_k$,
+is the probability of observing allele $x$ at SNP $i$ on fragment $k$. If
+$b_{ki}\in\{1,-1\}$ is the base on read $k$ at position $i$ and $\epsilon_{ki}$
+is the error rate,
+$$
+q_{ki}(x)=\left\{\begin{array}{ll}
+1-\epsilon_{ki} & \mbox{if $x=b_{ki}$} \\
+\epsilon_{ki} & \mbox{otherwise}
+\end{array}\right.
+$$
+
+Introduce $\delta_i\in\{1,-1\}$ as the phase of SNP $i$ and
+$\sigma_k\in\{1,-1\}$ the phase of fragment $k$. The probability of a configuration $\{\delta,\sigma\}$ is
+$$
+P(\sigma,\delta)=A\prod_{k}\prod_{i\in I_k}q_{ki}(\sigma_k\delta_i)=A\prod_{i}\prod_{k\in K_i}q_{ki}(\sigma_k\delta_i)
+$$
+where $A$ is the normalization factor. In the logarithm scale,
+$$
+\log P(\sigma,\delta)=C+\sum_k\sum_{i\in I_k}\log q_{ki}(\sigma_k\delta_i)=C+\sum_i\sum_{k\in K_i}\log q_{ki}(\sigma_k\delta_i)
+$$
+If the sequencing error rate is fixed, maximizing the probability is equivalent
+to solving the minimum error correction problem (MEC), which is NP-hard.
+
+We can calculate the marginal probability
+$$
+P(\sigma_k,\delta)
+=A\prod_{i\in I_k}q_{ki}(\sigma_k\delta_i)\cdot\left[\sum_{\sigma_1}\cdots\sum_{\sigma_{k-1}}\sum_{\sigma_{k+1}}\cdots\sum_{\sigma_n}\prod_{k'\not=k}\prod_{i\in I_{k'}}q_{k'i}(\sigma_{k'}\delta_i)\right]
+\propto\prod_{i\in I_k}q_{ki}(\sigma_k\delta_i)
+$$
+Because
+$$
+\sum_{\delta}\prod_{i\in I_k}q_{ki}(\sigma_k\delta_i)=1
+$$
+we can determine the normalization factor and thus
+$$
+P(\sigma_k,\delta)=\frac{1}{2}\prod_{i\in I_k}q_{ki}(\sigma_k\delta_i)
+$$
+We have
+$$
+P(\sigma_k|\delta)=\frac{\prod_{i\in I_k}q_{ki}(\sigma_k\delta_i)}{\prod_iq_{ki}(\delta_i)+\prod_iq_{ki}(-\delta_i)}
+$$
+Similarly we can derive
+$$
+P(\delta_i|\sigma)=\frac{\prod_{k\in K_i}q_{ki}(\sigma_k\delta_i)}{\prod_kq_{ki}(\sigma_k)+\prod_kq_{ki}(-\sigma_k)}
+$$
+
+Let
+$$
+\hat{\sigma}_k=\argmax_{\sigma_k}P(\sigma_k,\delta)=\argmax_{\sigma_k}P(\sigma_k|\delta)
+$$
+We note that
+$$
+\frac{P(\sigma_1,\ldots,\sigma_{k-1},\hat{\sigma_k},\sigma_{k+1},\ldots,\sigma_n,\delta)}{P(\sigma_1,\ldots,\sigma_{k-1},-\hat{\sigma_k},\sigma_{k+1},\ldots,\sigma_n,\delta)}
+=\frac{P(\hat{\sigma}_k,\delta)}{P(-\hat{\sigma}_k,\delta)}
+=\frac{P(\hat{\sigma}_k|\delta)}{P(-\hat{\sigma}_k|\delta)}
+\ge1
+$$
+This suggests we can independently optimize individual $\sigma_k$, $1\le k\le
+n$, to increase the total probability. Similarly we can optimize individual
+$\delta_i$. Repeatedly optimizing $\sigma$ and $\delta$ will converge a local
+maximum of $P(\sigma,\delta)$.
+
+It is worth noting in general
+$$
+P(\sigma_k,\sigma_{k'},\delta)\not=P(\sigma_k,\delta)P(\sigma_{k'},\delta)
+$$
+To see that
+$$
+P(\sigma_k,\sigma_{k'},\delta)\propto\prod_{i\in I_k}q_{ki}(\sigma_k\delta_i)\prod_{i'\in I_{k'}}q_{k'i'}(\sigma_{k'}\delta_{i'})
+$$
+We cannot easily calculate
+$$
+\sum_{\delta}\prod_{i\in I_k}q_{ki}(\sigma_k\delta_i)\prod_{i'\in I_{k'}}q_{k'i'}(\sigma_{k'}\delta_{i'})
+$$
+when $I_k\cap I_{k'}\not=\emptyset$. Nonetheless,
+$$
+\frac{P(\sigma_k,\sigma_{k'},\delta)}{P(\sigma_k,\delta)P(\sigma_{k'},\delta)}
+$$
+is a constant and therefore
+$$
+\argmax_{(\sigma_k,\sigma_{k'})}P(\sigma_k,\sigma_{k'},\delta)=\argmax_{(\sigma_k,\sigma_{k'})}P(\sigma_k,\delta)P(\sigma_{k'},\delta)
+=(\argmax_{\sigma_k}P(\sigma_k,\delta),\argmax_{\sigma_{k'}}P(\sigma_{k'},\delta))
+$$
+Independently optimizing $\sigma_k$ and $\sigma_{k'}$ is equivalent to joinly
+optimizing $(\sigma_k,\sigma_{k'})$. As a corollary, if $\delta$ is optimal,
+optimizing $\sigma_k$ individually will lead to a global maximum.
+
+\subsection{Long-read phasing with HMM}
+
+The hidder state is $s\in\{1,-1\}^{\beta}$, which is effectively a string
+consisting of $\beta$ consecutive SNPs. The transition probability is
+$$
+P(s_{i+1}|s_i)=\left\{\begin{array}{ll}
+1/2 & \mbox{if $s_{i+1}[i+1]=1$ and $s_{i+1}[2,\beta]=s_i[1,\beta-1]$} \\
+1/2 & \mbox{if $s_{i+1}[i+1]=-1$ and $s_{i+1}[2,\beta]=s_i[1,\beta-1]$} \\
+0 & \mbox{otherwise}
+\end{array}\right.
+$$
+The emission probability is
+\begin{eqnarray*}
+P(x_k[i]|s_i,x_k[1,i-1])&=&\frac{P(x_k[i-\beta+1,i],s_i)+P(x_k[i-\beta+1,i],-s_i)}
+{P(x_k[i-\beta+1,i-1],s_i)+P(x_k[i-\beta+1,i-1],-s_i)}\\
+&=&\frac{\prod_{j=1}^{\beta} q_{ki}(s_i[j])+\prod_{j=1}^{\beta} q_{ki}(-s_i[j])}{\prod_{j=1}^{\beta-1} q_{ki}(s_i[j])+\prod_{j=1}^{\beta-1} q_{ki}(-s_i[j])}
+\end{eqnarray*}
+Without losing generality, suppose $\prod_{j=1}^{\beta-1}q_{ki}(s_i[j])\gg
+\prod_{j=1}^{\beta-1}q_{ki}(-s_i[j])$. The above can be approximated to 
+$$
+P(x_k[i]|s_i,x_k[1,i-1])=\frac{q_{ki}(s_i[\beta])+q_{ki}(-s_i[\beta])\prod_{j=1}^{\beta-1} q_{ki}(-s_i[j])/q_{ki}(s_i[j])}
+{1+\prod_{j=1}^{\beta-1} q_{ki}(-s_i[j])/q_{ki}(s_i[j])}\approx q_{ki}(s_i[\beta])
+$$
+
+\subsection{Phasing with Hi-C reads}
+
+Let $L_k=\sum_i|b_{ki}|$ be the number of heterozygous SNPs on fragment $k$.
+We assume $L_k=2$ for all $k$ in this note. We have
+$$
+P(b_{ki}b_{kj}|\delta_i\delta_j)=\left\{\begin{array}{ll}
+1-\epsilon_{kij} & \mbox{if $b_{ki}b_{kj}\delta_i\delta_j=1$} \\
+\epsilon_{kij} & \mbox{if $b_{ki}b_{kj}\delta_i\delta_j=-1$}
+\end{array}\right.
+$$
+where $\epsilon_{kij}$ is the probability of seeing an inconsistent phasing on fragment $k$.
+It is determined by the base error rate $\epsilon_{ki}$ and the distance
+$d_{ij}$ between $i$ and $j$:
+\begin{eqnarray*}
+\epsilon_{kij}&=&\epsilon(d_{ij})\big[\epsilon_{ki}\epsilon_{kj}+(1-\epsilon_{ki})(1-\epsilon_{kj})\big]
++\big[1-\epsilon(d_{ij})\big]\big[\epsilon_{ki}(1-\epsilon_{kj})+\epsilon_{kj}(1-\epsilon_{ki})\big]\\
+&\approx&\epsilon(d_{ij})+\epsilon_{ki}+\epsilon_{kj}
+\end{eqnarray*}
+
+Noting that $b_{ki}b_{kj}\delta_i\delta_j$ takes either 1 or -1 for $i$ and $j$ on fragment
+$k$, we rewrite the equation above to
+$$
+P(b_{ki}b_{kj}|\delta_i\delta_j)=\sqrt{\epsilon_{kij}(1-\epsilon_{kij})}\left(\frac{1-\epsilon_{kij}}{\epsilon_{kij}}\right)^{\frac{1}{2}b_{ki}b_{kj}\delta_i\delta_j}
+$$
+The composite log likelihood of array $\delta$ is
+\begin{eqnarray*}
+\log\mathcal{L}(\delta)
+&=&\sum_k\sum_{i<j}\log P(b_{ki}b_{kj}|\delta_i\delta_j)\\
+&=&C+\frac{1}{2}\sum_{i<j}\delta_i\delta_j\sum_{k\in K_i\cap K_j}b_{ki}b_{kj}\log\frac{1-\epsilon_{kij}}{\epsilon_{kij}}
+\end{eqnarray*}
+where $C$ is a constant independent of $\delta$ and $k\in K_i\cap K_j$ is
+summed over reads that bridge site $i$ and $j$. For convenience, define
+$$
+W_{ij}\triangleq\sum_kb_{ki}b_{kj}\log\frac{1-\epsilon_{kij}}{\epsilon_{kij}}
+$$
+We have
+\begin{equation}\label{eq:lk-site}
+\log\mathcal{L}(\delta)=C+\frac{1}{2}\sum_{i<j}\delta_i\delta_jW_{ij}
+\end{equation}
+The goal is to find $\delta$ that maximizes $\log\mathcal{L}(\delta)$. At this
+step, we don't need the $L_k=2$ assumption any more. $W_{ij}$ tends to be
+positive if $i$ and $j$ are on the ref-ref or alt-alt haplotype.
+
+Construct a graph where each node corresponds to a SNP and there is an edge
+with weight $W_{ij}$ between node $i$ and $j$ if the two SNPs are bridged by
+one or more Hi-C reads. Maximazing Eq.~(\ref{eq:lk-site}) is equivalent to
+partitioning all nodes into two sets such that the sum of weights of edges
+between the two sets are minimum. This is a graph max cut problem, which is
+NP-hard.
+
+An alternative solution is to flip $\delta_i$ randomly. See the Linker paper
+for details.
 
 \newpage
 

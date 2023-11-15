@@ -43,12 +43,11 @@ def hmm_forward(x, q, p, e): # x: observation; q: stationary; p: transition; e: 
 def hmm_backward(x, q, p, e, s):
 	L = len(x)
 	b = [[0.0, 0.0] for i in range(L)]
-	b[L-1][0] = 1 / s[L-1]
-	b[L-1][1] = 1 / s[L-1]
+	b[L-1] = [1, 1]
 	for i in range(L - 2, -1, -1):
 		a = int(x[i+1])
-		b[i][0] = (b[i+1][0] * e[0][a] * p[0][0] + b[i+1][1] * e[1][a] * p[0][1]) / s[i]
-		b[i][1] = (b[i+1][0] * e[0][a] * p[1][0] + b[i+1][1] * e[1][a] * p[1][1]) / s[i]
+		b[i][0] = (b[i+1][0] * e[0][a] * p[0][0] + b[i+1][1] * e[1][a] * p[0][1]) / s[i+1]
+		b[i][1] = (b[i+1][0] * e[0][a] * p[1][0] + b[i+1][1] * e[1][a] * p[1][1]) / s[i+1]
 	return b
 
 def hmm_em1(x, q, p, e00):
@@ -58,14 +57,14 @@ def hmm_em1(x, q, p, e00):
 	L = len(x)
 	n0, n1, logP = 0, 0, 0
 	for i in range(L):
-		z = [s[i] * f[i][0]*b[i][0], s[i] * f[i][1] * b[i][1]]
-		z0 = z[1] / (z[0] + z[1])
+		z = [f[i][0]*b[i][0], f[i][1] * b[i][1]]
+		z0 = z[1] / (z[0] + z[1]) # actually z[0]+z[1] should always be 1
 		logP += math.log(s[i])
 		if int(x[i]) == 0:
 			n0 += z0
 		if int(x[i]) == 1:
 			n1 += z0
-	print("{:.2f}\t{:.2f}\t{:.4f}\t->\t{:.4f}\t{}".format(n0, n1, e00, n0/(n0+n1), logP))
+	print("{:.2f}\t{:.2f}\t{:.4f} -> {:.4f}\t{}".format(n0, n1, e00, n0/(n0+n1), logP))
 	return n0/(n0+n1)
 
 # main function
