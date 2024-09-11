@@ -13,49 +13,84 @@
 \begin{document}
 
 \begin{question}
-Given a string $T$, a \emph{subsequence} of $T$ is composed of symbols in $T$
-without changing their original order in $T$. For example, both ${\tt CGA}$ and
-${\tt CCT}$ are subsequences of ${\tt CGCTA}$. Given two strings $T_1$ and
-$T_2$, a \emph{common subsequence} is a string that is the subsequence of both
-$T_1$ and $T_2$. For example, ${\tt CGA}$ is a common subsequence of ${\tt
-CGCTA}$ and ${\tt CTGAT}$. The 2-string longest common subsequence problem
-is to find the longest common subsequence (LCS) among all subsequences between
-two strings. Questions:
-\begin{enumerate}
-\item Find the length of LCS between two strings with dynamic programming (DP).
-Write down the DP equation. \emph{Hint: very similar to computing edit distance.}
-\item Implement the algorithm and compute the length of LCS between 
-``${\tt GCATAAATTATAACTCCAGCTATAGC}$'' and ``${\tt CAAACCCCAGGGACGGGTTAGCA}$''.
-Try to use less memory.
-\end{enumerate}
+X-drop alignment attempts to find the best matching prefixes between two strings.
+During the alignment, we keep track of the best alignment score $S$ and stop the alignment
+if the score of the current cell drops below $S-X$, where $X$ is the drop cutoff.
+If the best matching prefixes are much shorter than the two input strings,
+we only need to compute a small number of cells without filling the entire scoring matrix.
+
+Suppose the match score is 1 and the mismatch/gap penalty is 2.
+Under X-drop cutoff 10, perform X-drop alignment between the following strings and
+output the optimal alignment score and the lengths of the matching prefixes.
+\begin{quote}
+\footnotesize\tt
+GTTGATGGTCTACAACGTTATCGTCACAGCCCATGCATTTGTAATAATCTTCTTCATAGTAATA\\
+GATAGATGGTCTGAGCTATGATATCAATTGGCTTCCTAGGGTTTATCGTGTGAGCACACCATATT
+\end{quote}
+Requirements:
+\begin{itemize}
+\item Find the correct solution ({\bf 5pt})
+\item Avoid filling the entire scoring matrix ({\bf 3pt})
+\item As detailed base alignment is not needed, reduce memory by using 1-dimensional array ({\bf 3pt})
+\end{itemize}
 \end{question}
 
 \begin{proof}
-Given two strings $A=a_1a_2\ldots a_m$ and $B=b_1b_2\ldots b_n$, let $f(i,j)$
-be the length of LCS between prefixes $a_1a_2\ldots a_i$ and $b_1b_2\ldots
-b_j$. Then $f(m,n)$ gives the length of LCS between $A$ and $B$.
-
-The computation of $f()$ starts with $f(i,0)=0$ and $f(0,j)=0$ for $0\le i\le m$
-and $0\le j\le n$. The DP equation is
-$$
-f(i,j)=\max\{f(i-1,j-1)+\delta(a_i,b_j),f(i-1,j),f(i,j-1)\}
-$$
-where $\delta(a,b)$ equals 1 if $a=b$, or 0 otherwise.
-
-A python implementation can be found at
-\href{https://ideone.com/Om4JhD}{https://ideone.com/Om4JhD}. For the two given
-strings, the length of LCS is 15.
-
-An equivalent equation is
-$$
-f(i,j)=\left\{\begin{array}{ll}
-0            & \mbox{if $i=0$ or $j=0$}\\
-f(i-1,j-1)+1 & \mbox{if $i,j>0$ and $a_i=b_j$}\\ 
-\max\{f(i-1,j),f(i,j-1)\} & \mbox{otherwise}
-\end{array}\right.
-$$
-It is equivalent because $f(i-1,j-1)\le\max\{f(i-1,j),f(i,j-1)\}$.
+See \href{https://ideone.com/0h4m0f}{https://ideone.com/0h4m0f} (in Javascript).
+The alignment score is 6 and the best matching prefixes are:
+\begin{quote}
+\footnotesize\tt
+GTTGATGGTCT   (of length 11)\\
+GATAGATGGTCT  (of length 12)
+\end{quote}
 \end{proof}
+
+
+
+%\begin{question}
+%Given a string $T$, a \emph{subsequence} of $T$ is composed of symbols in $T$
+%without changing their original order in $T$. For example, both ${\tt CGA}$ and
+%${\tt CCT}$ are subsequences of ${\tt CGCTA}$. Given two strings $T_1$ and
+%$T_2$, a \emph{common subsequence} is a string that is the subsequence of both
+%$T_1$ and $T_2$. For example, ${\tt CGA}$ is a common subsequence of ${\tt
+%CGCTA}$ and ${\tt CTGAT}$. The 2-string longest common subsequence problem
+%is to find the longest common subsequence (LCS) among all subsequences between
+%two strings. Questions:
+%\begin{enumerate}
+%\item Find the length of LCS between two strings with dynamic programming (DP).
+%Write down the DP equation. \emph{Hint: very similar to computing edit distance.}
+%\item Implement the algorithm and compute the length of LCS between 
+%``${\tt GCATAAATTATAACTCCAGCTATAGC}$'' and ``${\tt CAAACCCCAGGGACGGGTTAGCA}$''.
+%Try to use less memory.
+%\end{enumerate}
+%\end{question}
+%
+%\begin{proof}
+%Given two strings $A=a_1a_2\ldots a_m$ and $B=b_1b_2\ldots b_n$, let $f(i,j)$
+%be the length of LCS between prefixes $a_1a_2\ldots a_i$ and $b_1b_2\ldots
+%b_j$. Then $f(m,n)$ gives the length of LCS between $A$ and $B$.
+%
+%The computation of $f()$ starts with $f(i,0)=0$ and $f(0,j)=0$ for $0\le i\le m$
+%and $0\le j\le n$. The DP equation is
+%$$
+%f(i,j)=\max\{f(i-1,j-1)+\delta(a_i,b_j),f(i-1,j),f(i,j-1)\}
+%$$
+%where $\delta(a,b)$ equals 1 if $a=b$, or 0 otherwise.
+%
+%A python implementation can be found at
+%\href{https://ideone.com/Om4JhD}{https://ideone.com/Om4JhD}. For the two given
+%strings, the length of LCS is 15.
+%
+%An equivalent equation is
+%$$
+%f(i,j)=\left\{\begin{array}{ll}
+%0            & \mbox{if $i=0$ or $j=0$}\\
+%f(i-1,j-1)+1 & \mbox{if $i,j>0$ and $a_i=b_j$}\\ 
+%\max\{f(i-1,j),f(i,j-1)\} & \mbox{otherwise}
+%\end{array}\right.
+%$$
+%It is equivalent because $f(i-1,j-1)\le\max\{f(i-1,j),f(i,j-1)\}$.
+%\end{proof}
 
 
 
