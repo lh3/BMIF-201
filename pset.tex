@@ -238,33 +238,51 @@ need to provide a simulator.
 
 \end{proof}
 
+
+%\begin{question}
+%Suppose we have five reads over seven SNPs:
+%\begin{quote}
+%\tt RRAAAR.\\
+%\tt AA.RRAR\\
+%\tt ARARARA\\
+%\tt .ARRAAR\\
+%\tt .ARRRAA
+%\end{quote}
+%where each line represents a read, ``{\tt R}'' stands for a reference allele,
+%``{\tt A}'' for an alternate allele, and ``{\tt .}'' for a missing allele. Use
+%the iterative flipping algorithm to find the phase of each SNP and the number
+%of minimum errors. Are there other local minima?
+%\end{question}
+%
+%\begin{proof}
+%The best solution is (or its complement):
+%\begin{quote}
+%\tt X ++---+-\\
+%\tt + RRAAAR.\\
+%\tt - AA.RRAR\\
+%\tt + \underline{A}RA\underline{R}ARA\\
+%\tt - .ARR\underline{A}AR\\
+%\tt - .ARRRA\underline{A}
+%\end{quote}
+%The four underlined letters indicate the errors. There are other local minima
+%with 11 errors. Source code in JavaScript can be found at
+%\href{https://ideone.com/2wqlig}{https://ideone.com/2wqlig}.
+%\end{proof}
+
+
 \begin{question}
-Suppose we have five reads over seven SNPs:
+Compute
 \begin{quote}
-\tt RRAAAR.\\
-\tt AA.RRAR\\
-\tt ARARARA\\
-\tt .ARRAAR\\
-\tt .ARRRAA
+\footnotesize\verb|human   TCCTGCCTCATCCTATTATTTATCGCACCTAC-GTTCAATATTACAGGCGAA-CATA-CTTACTAAAGTGTGTTAATTAATTAATGCTTGTAG|\\
+\footnotesize\verb|bonobo  TCCTGCCCCATTACGTTATTTATCGCACCTAC-GTTCAATATTATTACCTAG-CATGATTTACTAAAGCGTGTTAATTAATTAATGCTTGTAG|\\
+\footnotesize\verb|chimp   TCCTGCCCCATTGTATTATTTATCGCACCTAC-GTTCAATATTACGACCTAG-CATA-CCTACTAAAGTGTGTTGATTAATTAATGCTTGCAG|\\
+\footnotesize\verb|gibbon  TTCTGACCCATCCTATTGTTGATCGCGCCTAC-GTTCAATATCCCAGCCGAG-CATA-CTTACACTAAGGTGTTAATTAATTCATGCTTGTTG|\\
+\footnotesize\verb|oran-pa TCCTACCTCATGCCATTATTAATCGCGCCTAATATCCAATATCCTAGCCCCACCCTC-AGTGTTTGAAGCTGCTATTTAATTTATGCTAG-AG|\\
+\footnotesize\verb|gorilla TCCTGCCCCATGCTACCATTTATCGCACCTAC-GTTCAATATTACAGCCGAG-CGCA-CAGTGTTCATGGTGTTAATTAATTCATGCTTGTTG|\\
+\footnotesize\verb|oran-pp TCCTGCCCCATGGCGTTATTGATCGCGCCTAACGTCCAATGTTCTAGCGCCC-CCTC-CCTATTGAAAGTTGTTATTTAATTTATGCTAG-AG|\\
 \end{quote}
-where each line represents a read, ``{\tt R}'' stands for a reference allele,
-``{\tt A}'' for an alternate allele, and ``{\tt .}'' for a missing allele. Use
-the iterative flipping algorithm to find the phase of each SNP and the number
-of minimum errors. Are there other local minima?
 \end{question}
 
-\begin{proof}
-The best solution is (or its complement):
-\begin{quote}
-\tt X ++---+-\\
-\tt + RRAAAR.\\
-\tt - AA.RRAR\\
-\tt + \underline{A}RA\underline{R}ARA\\
-\tt - .ARR\underline{A}AR\\
-\tt - .ARRRA\underline{A}
-\end{quote}
-The four underlined letters indicate the errors. There are other local minima
-with 11 errors. Source code in JavaScript can be found at
-\href{https://ideone.com/2wqlig}{https://ideone.com/2wqlig}.
-\end{proof}
+
+
 \end{document}
