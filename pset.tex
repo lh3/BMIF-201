@@ -36,7 +36,7 @@ Requirements:
 \end{question}
 
 \begin{proof}
-See \href{https://ideone.com/0h4m0f}{https://ideone.com/0h4m0f} (in Javascript).
+See \url{https://ideone.com/0h4m0f} (in Javascript).
 The alignment score is 6 and the best matching prefixes are:
 \begin{quote}
 \footnotesize\tt
@@ -139,7 +139,7 @@ approximation in the Mash paper (Ondov et al, 2016). The first derivation is
 preferred as it uses one less approximation.
 
 A sorting-based python implementation is available at
-\href{https://ideone.com/F02WCa}{https://ideone.com/F02WCa}. The 7-mer
+\url{https://ideone.com/F02WCa}. The 7-mer
 similarity is 93.8\%. This algorithm can also implemented with a hash table.
 The major problem with this approximation is that it assumes all $k$-mers are
 independent. Due to actual $k$-mer dependencies, the estimate varies with $k$.
@@ -155,7 +155,7 @@ Use EM to estimate the transcript fraction of the three transcripts.
 \end{question}
 
 \begin{proof}
-25\%, 50\% and 25\%. Source code: \href{https://ideone.com/EKB95Q}{https://ideone.com/EKB95Q}.
+25\%, 50\% and 25\%. Source code: \url{https://ideone.com/EKB95Q}.
 \end{proof}
 
 
@@ -222,7 +222,7 @@ For the given string, the inferred hidden states are:
 \footnotesize\tt 1211100122111011112222112022010200111001211202220112112111220222112221211121002122122222222212222112\\
 \footnotesize\tt NNNNNNNNDDNNNNNNNNDDDDNNNNDNNNNNNNNNNNNNNNNNNDDDNNNNNNNNNNDDNDDDDDDDDDDNNNNNNNNNDDDDDDDDDDDDDDDDDNNN
 \end{quote}
-A python implementation is available at \href{https://ideone.com/nnh6Q2}{https://ideone.com/nnh6Q2}.
+A python implementation is available at \url{https://ideone.com/nnh6Q2}.
 
 \begin{flushleft}
 PS: This is simulated data. The truth actually is
@@ -233,7 +233,7 @@ PS: This is simulated data. The truth actually is
 \end{quote}
 
 The simulator and the posterior decoder can be found at
-\href{https://ideone.com/a9a2h0}{https://ideone.com/a9a2h0}. Students do not
+\url{https://ideone.com/a9a2h0}. Students do not
 need to provide a simulator.
 
 \end{proof}
@@ -271,7 +271,7 @@ need to provide a simulator.
 
 
 \begin{question}
-Here is the multiple-sequence alignment (MSA) of a segment from the D-loop in mitochondion:
+Given the multiple-sequence alignment (MSA) of D-loop segments in primate mitochondria
 \begin{quote}
 \footnotesize\verb|human   TCCTGCCTCATCCTATTATTTATCGCACCTAC-GTTCAATATTACAGGCGAA-CATA-CTTACTAAAGTGTGTTAATTAATTAATGCTTGTAG|\\
 \footnotesize\verb|bonobo  TCCTGCCCCATTACGTTATTTATCGCACCTAC-GTTCAATATTATTACCTAG-CATGATTTACTAAAGCGTGTTAATTAATTAATGCTTGTAG|\\
@@ -279,21 +279,24 @@ Here is the multiple-sequence alignment (MSA) of a segment from the D-loop in mi
 \footnotesize\verb|gibbon  TTCTGACCCATCCTATTGTTGATCGCGCCTAC-GTTCAATATCCCAGCCGAG-CATA-CTTACACTAAGGTGTTAATTAATTCATGCTTGTTG|\\
 \footnotesize\verb|oran-pa TCCTACCTCATGCCATTATTAATCGCGCCTAATATCCAATATCCTAGCCCCACCCTC-AGTGTTTGAAGCTGCTATTTAATTTATGCTAG-AG|\\
 \footnotesize\verb|gorilla TCCTGCCCCATGCTACCATTTATCGCACCTAC-GTTCAATATTACAGCCGAG-CGCA-CAGTGTTCATGGTGTTAATTAATTCATGCTTGTTG|\\
-\footnotesize\verb|oran-pp TCCTGCCCCATGGCGTTATTGATCGCGCCTAACGTCCAATGTTCTAGCGCCC-CCTC-CCTATTGAAAGTTGTTATTTAATTTATGCTAG-AG|\\
+\footnotesize\verb|oran-pp TCCTGCCCCATGGCGTTATTGATCGCGCCTAACGTCCAATGTTCTAGCGCCC-CCTC-CCTATTGAAAGTTGTTATTTAATTTATGCTAG-AG|
 \end{quote}
-Write a program to compute the cost with Fitch's maximum-parsimony (MP) algorithm for the following tree topologies:
+and candidate tree topologies
 \begin{quote}
 \footnotesize\tt ((((human,(chimp,bonobo)),gorilla),(oran-pa,oran-pp)),gibbon)\\
 \footnotesize\tt ((((human,gorilla),(chimp,bonobo)),(oran-pa,oran-pp)),gibbon)\\
 \footnotesize\tt ((((human,bonobo),gorilla),(oran-pa,oran-pp)),(chimp,gibbon))\\
 \footnotesize\tt (human,(((gibbon,(oran-pa,oran-pp)),gorilla),(chimp,bonobo)))
 \end{quote}
+Write a program to compute the cost of each candidate tree using Fitch's maximum-parsimony (MP) algorithm.
 Which topoloy is the optimal under MP? Can we use MP to root an unrooted phylogenetic tree?
+Additional requirement: parse tree strings in the New Hampshire format; don't hard-code the trees in the source code.
 \end{question}
 
 \begin{proof}
 The costs are 84, 87, 94 and 84, respectively. The first and the last topologies are both optimal.
 They in fact have identical unrooted topology, so MP can't be used to root a tree.
+Source code at \url{https://ideone.com/TnhZ6O} (in JavaScript).
 \end{proof}
 
 

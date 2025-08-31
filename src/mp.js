@@ -10,18 +10,13 @@ class PKNode {
 		this.d = -1.0; // branch length
 	}
 }
-
-class PKTree {
-	constructor() {
-		this.root = null, this.node = [];
-		this.error = 0; // 1: unmatched ); 2: unmatched (; 4: unmatched ]; 8: duplicated leaves
-	}
 }
 
 function pk_parse_nh(str) {
 	const re = /(\(|((\)?[^,;:\[\]\(\)]+|\))(:[\d.eE\-]+)?(\[[^\[\]]*\])?))/g;
 	const str_compact = str.replace(/[;\s\n]+/g, ""); // compacted string without SPACE, new line or ';'
-	let tree = new PKTree(), m, stack = [], leaf_cnt = {};
+	let tree = { root:null, node:[], error:0 };
+	let m, stack = [], leaf_cnt = {};
 	while ((m = re.exec(str_compact)) != null) { // each match returns '(' or a node
 		let p = new PKNode();
 		if (m[1] == '(') {
@@ -57,6 +52,18 @@ function pk_parse_nh(str) {
 	return tree;
 }
 
+function pk_seq_len(node) {
+	let len = -1;
+	for (let i = 0; i < node.length; ++i) {
+		const p = node[i];
+		if (p.child.length == 0) {
+			if (len < 0) len = p.seq.length;
+			else if (len != p.seq.length) return -1;
+		}
+	}
+	return len;
+}
+
 function pk_parse_msa_simple(tree, msa_str) {
 	let h = {};
 	for (let i = 0; i < tree.node.length; ++i) {
@@ -70,18 +77,7 @@ function pk_parse_msa_simple(tree, msa_str) {
 		if (h[t[0]] == null) return;
 		tree.node[h[t[0]]].seq += t[1];
 	}
-}
-
-PKTree.prototype.seq_len = function() {
-	let len = -1;
-	for (let i = 0; i < this.node.length; ++i) {
-		const p = this.node[i];
-		if (p.child.length == 0) {
-			if (len < 0) len = p.seq.length;
-			else if (len != p.seq.length) return -1;
-		}
-	}
-	return len;
+	return pk_seq_len(tree.node);
 }
 
 function pk_mp1(node, col) {
@@ -114,8 +110,7 @@ function pk_mp1(node, col) {
 	return [c, a];
 }
 
-function main(args) {
-	let msa =
+const msa =
 `human TCCTGCCTCATCCTATTATTTATCGCACCTAC-GTTCAATATTACAGGCGAA-CATA-CTTACTAAAGTGTGTTAATTAATTAATGCTTGTAG
 bonobo TCCTGCCCCATTACGTTATTTATCGCACCTAC-GTTCAATATTATTACCTAG-CATGATTTACTAAAGCGTGTTAATTAATTAATGCTTGTAG
 chimp TCCTGCCCCATTGTATTATTTATCGCACCTAC-GTTCAATATTACGACCTAG-CATA-CCTACTAAAGTGTGTTGATTAATTAATGCTTGCAG
@@ -123,22 +118,21 @@ gorilla TCCTGCCCCATGCTACCATTTATCGCACCTAC-GTTCAATATTACAGCCGAG-CGCA-CAGTGTTCATGGTG
 oran-pa TCCTACCTCATGCCATTATTAATCGCGCCTAATATCCAATATCCTAGCCCCACCCTC-AGTGTTTGAAGCTGCTATTTAATTTATGCTAG-AG
 oran-pp TCCTGCCCCATGGCGTTATTGATCGCGCCTAACGTCCAATGTTCTAGCGCCC-CCTC-CCTATTGAAAGTTGTTATTTAATTTATGCTAG-AG
 gibbon TTCTGACCCATCCTATTGTTGATCGCGCCTAC-GTTCAATATCCCAGCCGAG-CATA-CTTACACTAAGGTGTTAATTAATTCATGCTTGTTG`;
-	let trees = [
+
+const trees = [
 		"((((human,(chimp,bonobo)),gorilla),(oran-pa,oran-pp)),gibbon)",
 		"((((human,gorilla),(chimp,bonobo)),(oran-pa,oran-pp)),gibbon)",
 		"((((human,bonobo),gorilla),(oran-pa,oran-pp)),(chimp,gibbon))",
 		"(human,(((gibbon,(oran-pa,oran-pp)),gorilla),(chimp,bonobo)))"];
-	for (let i = 0; i < trees.length; ++i) {
-		let tree = pk_parse_nh(trees[i]);
-		pk_parse_msa_simple(tree, msa);
-		let tot = 0;
-		for (let i = 0; i < tree.seq_len(); ++i) {
-			let [c, a] = pk_mp1(tree.node, i);
-			tot += c;
-		}
-		if (typeof print == "function") print(tot, trees[i]);
-		else console.log(tot, trees[i]);
-	}
-}
 
-main(arguments);
+for (let i = 0; i < trees.length; ++i) {
+	let tree = pk_parse_nh(trees[i]);
+	let len = pk_parse_msa_simple(tree, msa);
+	let tot = 0;
+	for (let i = 0; i < len; ++i) {
+		let [c, a] = pk_mp1(tree.node, i);
+		tot += c;
+	}
+	if (typeof print == "function") print(tot, trees[i]);
+	else console.log(tot, trees[i]);
+}
