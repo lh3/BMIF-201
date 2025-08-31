@@ -271,7 +271,7 @@ need to provide a simulator.
 
 
 \begin{question}
-Compute
+Here is the multiple-sequence alignment (MSA) of a segment from the D-loop in mitochondion:
 \begin{quote}
 \footnotesize\verb|human   TCCTGCCTCATCCTATTATTTATCGCACCTAC-GTTCAATATTACAGGCGAA-CATA-CTTACTAAAGTGTGTTAATTAATTAATGCTTGTAG|\\
 \footnotesize\verb|bonobo  TCCTGCCCCATTACGTTATTTATCGCACCTAC-GTTCAATATTATTACCTAG-CATGATTTACTAAAGCGTGTTAATTAATTAATGCTTGTAG|\\
@@ -281,8 +281,20 @@ Compute
 \footnotesize\verb|gorilla TCCTGCCCCATGCTACCATTTATCGCACCTAC-GTTCAATATTACAGCCGAG-CGCA-CAGTGTTCATGGTGTTAATTAATTCATGCTTGTTG|\\
 \footnotesize\verb|oran-pp TCCTGCCCCATGGCGTTATTGATCGCGCCTAACGTCCAATGTTCTAGCGCCC-CCTC-CCTATTGAAAGTTGTTATTTAATTTATGCTAG-AG|\\
 \end{quote}
+Write a program to compute the cost with Fitch's maximum-parsimony (MP) algorithm for the following tree topologies:
+\begin{quote}
+\footnotesize\tt ((((human,(chimp,bonobo)),gorilla),(oran-pa,oran-pp)),gibbon)\\
+\footnotesize\tt ((((human,gorilla),(chimp,bonobo)),(oran-pa,oran-pp)),gibbon)\\
+\footnotesize\tt ((((human,bonobo),gorilla),(oran-pa,oran-pp)),(chimp,gibbon))\\
+\footnotesize\tt (human,(((gibbon,(oran-pa,oran-pp)),gorilla),(chimp,bonobo)))
+\end{quote}
+Which topoloy is the optimal under MP? Can we use MP to root an unrooted phylogenetic tree?
 \end{question}
 
+\begin{proof}
+The costs are 84, 87, 94 and 84, respectively. The first and the last topologies are both optimal.
+They in fact have identical unrooted topology, so MP can't be used to root a tree.
+\end{proof}
 
 
 \end{document}

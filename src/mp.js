@@ -2,111 +2,74 @@
 
 "use strict";
 
-let PhyloKit = {};
-
 class PKNode {
 	constructor() {
 		this.id = -1;
-		this.parent = null;
-		this.child = [];
+		this.parent = null, this.child = [];
 		this.name = this.meta = this.seq = "";
 		this.d = -1.0; // branch length
-		this.hidden = false; // hide the subtree descended from the node
 	}
 }
 
 class PKTree {
 	constructor() {
-		this.root = null;
-		this.node = [];
+		this.root = null, this.node = [];
 		this.error = 0; // 1: unmatched ); 2: unmatched (; 4: unmatched ]; 8: duplicated leaves
 	}
 }
 
-// parse a tree in the NH format
-PhyloKit.parse_nh = function(str) {
-	// helper function: parse a single node
-	function parse_node(str, l, tree, x) {
-		let beg, end = 0, i;
-		let z = new PKNode();
-		for (i = l, beg = l; i < str.length && str[i] != ',' && str[i] != ')'; ++i) {
-			const c = str[i];
-			if (c == '[') { // NH comment; skip
-				const meta_beg = i;
-				if (end == 0) end = i;
-				do { ++i; } while (i < str.length && str.charAt(i) != ']');
-				if (i == str.length) {
-					tree.error |= 4;
+function pk_parse_nh(str) {
+	const re = /(\(|((\)?[^,;:\[\]\(\)]+|\))(:[\d.eE\-]+)?(\[[^\[\]]*\])?))/g;
+	const str_compact = str.replace(/[;\s\n]+/g, ""); // compacted string without SPACE, new line or ';'
+	let tree = new PKTree(), m, stack = [], leaf_cnt = {};
+	while ((m = re.exec(str_compact)) != null) { // each match returns '(' or a node
+		let p = new PKNode();
+		if (m[1] == '(') {
+			p.id = -2; // a placehold for the left '('
+		} else if (m[3]) {
+			if (m[3][0] == ')') { // an internal node
+				let q;
+				while (stack.length > 0) { // look for the matching '('
+					q = stack.pop();
+					if (q.id == -2) break;
+					p.child.push(q);
+				}
+				p.child.reverse();
+				if (q.id != -2) {
+					tree.error |= 1; // ERROR: unmatched ')'
 					break;
 				}
-				z.meta = str.substr(meta_beg, i - meta_beg + 1);
-			} else if (c == ':') { // end of an internal node
-				if (end == 0) end = i;
-				let j;
-				for (j = ++i; i < str.length; ++i) {
-					const cc = str[i];
-					if ((cc < '0' || cc > '9') && cc != 'e' && cc != 'E' && cc != '+' && cc != '-' && cc != '.')
-						break;
-				}
-				z.d = parseFloat(str.substr(j, i - j));
-				--i;
-			} else { // external node
-				if (c < '!' && c > '~' && end == 0) end = i;
+				for (const q of p.child) q.parent = p; // set parent node
+				if (m[3].length > 1) p.name = m[3].substr(1); // set internal name if present
+			} else { // a leaf
+				p.name = m[3];
+				if (leaf_cnt[p.name] == null) leaf_cnt[p.name] = 0;
+				if (++leaf_cnt[p.name] > 1) tree.error |= 8; // ERROR: duplicated leaf name
 			}
+			if (m[4]) p.d = parseFloat(m[4].substr(1)); // set branch length if present
+			p.id = tree.node.length;
+			tree.node.push(p);
 		}
-		if (end == 0) end = i;
-		if (end > beg) {
-			z.name = str.substr(beg, end - beg);
-			if (z.name == ";") z.name = "";
-		}
-		tree.node.push(z);
-		return i;
+		stack.push(p);
 	}
-
-	let tree = new PKTree();
-	let stack = [];
-	for (let l = 0; l < str.length;) {
-		while (l < str.length && (str.charCodeAt(l) < 33 || str.charCodeAt(l) > 126)) ++l;
-		if (l == str.length) break;
-		let c = str[l];
-		if (c == ',') ++l;
-		else if (c == '(') {
-			stack.push(-1); ++l;
-		} else if (c == ')') {
-			let i;
-			for (i = stack.length - 1; i >= 0; --i)
-				if (stack[i] < 0) break;
-			if (i < 0) {
-				tree.error |= 1; break;
-			}
-			const x = tree.node.length;
-			let m = stack.length - 1 - i;
-			l = parse_node(str, l + 1, tree, m);
-			for (i = stack.length - 1, m = m - 1; m >= 0; --m, --i) {
-				tree.node[x].child[m] = tree.node[stack[i]];
-				tree.node[stack[i]].parent = tree.node[x];
-			}
-			stack.length = i;
-			stack.push(x);
-		} else {
-			stack.push(tree.node.length);
-			l = parse_node(str, l, tree, 0);
-		}
-	}
-	if (stack.length > 1) tree.error |= 2;
+	if (stack.length != 1) tree.error |= 2; // ERROR: unmatched '('
 	tree.root = tree.node[tree.node.length - 1];
-	for (let i = 0; i < tree.node.length; ++i) tree.node[i].id = i;
 	return tree;
 }
 
-PKTree.prototype.get_leaf_dict = function() {
+function pk_parse_msa_simple(tree, msa_str) {
 	let h = {};
-	for (let i = 0; i < this.node.length; ++i) {
-		const p = this.node[i];
+	for (let i = 0; i < tree.node.length; ++i) {
+		const p = tree.node[i];
 		if (p.child.length == 0)
 			h[p.name] = i;
 	}
-	return h;
+	for (const line of msa_str.split("\n")) {
+		let t = line.split(/\s+/);
+		if (t.length < 2) return;
+		if (h[t[0]] == null) return;
+		tree.node[h[t[0]]].seq += t[1];
+	}
 }
 
 PKTree.prototype.seq_len = function() {
@@ -121,27 +84,7 @@ PKTree.prototype.seq_len = function() {
 	return len;
 }
 
-PKTree.prototype.get_msa_col = function(col) {
-	let a = [];
-	for (let i = 0; i < this.node.length; ++i)
-		a.push(this.node[i].seq[col]);
-	return a;
-}
-
-class PKMsaReader {
-	constructor(tree) {
-		this.tree = tree;
-		this.name2leaf = tree.get_leaf_dict();
-	}
-	parse_line(line) {
-		let t = line.split(/\s+/);
-		if (t.length < 2) return;
-		if (this.name2leaf[t[0]] == null) return;
-		this.tree.node[this.name2leaf[t[0]]].seq += t[1];
-	}
-}
-
-PhyloKit.mp1 = function(node, col) {
+function pk_mp1(node, col) {
 	let R = [], c = 0;
 	for (let i = 0; i < node.length; ++i) R[i] = {};
 	for (let i = 0; i < node.length; ++i) {
@@ -183,18 +126,18 @@ gibbon TTCTGACCCATCCTATTGTTGATCGCGCCTAC-GTTCAATATCCCAGCCGAG-CATA-CTTACACTAAGGTGT
 	let trees = [
 		"((((human,(chimp,bonobo)),gorilla),(oran-pa,oran-pp)),gibbon)",
 		"((((human,gorilla),(chimp,bonobo)),(oran-pa,oran-pp)),gibbon)",
+		"((((human,bonobo),gorilla),(oran-pa,oran-pp)),(chimp,gibbon))",
 		"(human,(((gibbon,(oran-pa,oran-pp)),gorilla),(chimp,bonobo)))"];
 	for (let i = 0; i < trees.length; ++i) {
-		let tree = PhyloKit.parse_nh(trees[i]);
-		let r = new PKMsaReader(tree);
-		for (const line of msa.split("\n"))
-			r.parse_line(line);
+		let tree = pk_parse_nh(trees[i]);
+		pk_parse_msa_simple(tree, msa);
 		let tot = 0;
 		for (let i = 0; i < tree.seq_len(); ++i) {
-			let [c, a] = PhyloKit.mp1(tree.node, i);
+			let [c, a] = pk_mp1(tree.node, i);
 			tot += c;
 		}
-		print(tot, trees[i]);
+		if (typeof print == "function") print(tot, trees[i]);
+		else console.log(tot, trees[i]);
 	}
 }
 
